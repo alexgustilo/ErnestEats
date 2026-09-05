@@ -25,7 +25,7 @@ ErnestEats allows customers to browse the menu, place orders, and track order st
 ErnestEats/
 ├── frontend/ → React app
 ├── backend/ → Express API
-├── database/ → ERD, schema, seed data
+├── database/ → ERD, schema docs, seed data (actual DB hosted on Supabase)
 └── docs/ → system flow, UI/UX, screenshots
 
 
