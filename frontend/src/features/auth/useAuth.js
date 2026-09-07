@@ -1,42 +1,124 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { registerRequest, loginRequest } from './authApi'
 
 export function useAuth() {
-  const [loading, setLoading] = useState(false)
+  const [user, setUser] = useState(null)
+  const [profile, setProfile] = useState(null)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
+  useEffect(() => {
+    const savedUser = localStorage.getItem('user')
+    const savedProfile = localStorage.getItem('profile')
+
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser))
+      } catch {
+        localStorage.removeItem('user')
+      }
+    }
+
+    if (savedProfile) {
+      try {
+        setProfile(JSON.parse(savedProfile))
+      } catch {
+        localStorage.removeItem('profile')
+      }
+    }
+
+    setLoading(false)
+  }, [])
+
   async function register(formData) {
-    setLoading(true)
     setError(null)
+    setLoading(true)
+
     try {
       const data = await registerRequest(formData)
+
+      if (data.user) {
+        setUser(data.user)
+        localStorage.setItem(
+          'user',
+          JSON.stringify(data.user)
+        )
+      }
+
+      if (data.profile) {
+        setProfile(data.profile)
+        localStorage.setItem(
+          'profile',
+          JSON.stringify(data.profile)
+        )
+      }
+
       return data
+
     } catch (err) {
       setError(err.message)
       throw err
+
     } finally {
       setLoading(false)
     }
   }
 
   async function login(formData) {
-    setLoading(true)
     setError(null)
+    setLoading(true)
+
     try {
       const data = await loginRequest(formData)
 
-      // i-store yung session sa browser para hindi mawala pag nag-refresh
-      localStorage.setItem('access_token', data.session.access_token)
-      localStorage.setItem('user', JSON.stringify(data.user))
+      // Save user
+      if (data.user) {
+        setUser(data.user)
+
+        localStorage.setItem(
+          'user',
+          JSON.stringify(data.user)
+        )
+      }
+
+      // Save profile
+      if (data.profile) {
+        setProfile(data.profile)
+
+        localStorage.setItem(
+          'profile',
+          JSON.stringify(data.profile)
+        )
+      }
 
       return data
+
     } catch (err) {
       setError(err.message)
       throw err
+
     } finally {
       setLoading(false)
     }
   }
 
-  return { register, login, loading, error }
+  function logout() {
+    setError(null)
+
+    localStorage.removeItem('user')
+    localStorage.removeItem('profile')
+
+    setUser(null)
+    setProfile(null)
+  }
+
+  return {
+    user,
+    profile,
+    login,
+    register,
+    logout,
+    loading,
+    error,
+  }
 }
