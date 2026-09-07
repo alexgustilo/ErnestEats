@@ -34,6 +34,7 @@ async function registerUser({ email, password, fullName, contactNumber }) {
 }
 
 async function loginUser({ email, password }) {
+    // Login through Supabase Auth
     const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -43,7 +44,22 @@ async function loginUser({ email, password }) {
         throw new Error(error.message);
     }
 
-    return data;
+    // Get user's profile
+    const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
+
+    if (profileError) {
+        throw new Error(profileError.message);
+    }
+
+    return {
+        session: data.session,
+        user: data.user,
+        profile: profileData
+    };
 }
 
 module.exports = { registerUser, loginUser };
