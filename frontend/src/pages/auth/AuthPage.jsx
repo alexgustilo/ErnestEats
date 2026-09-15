@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { replace, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../features/auth/useAuth'
 
 function AuthPage() {
@@ -29,37 +29,45 @@ function AuthPage() {
     setResult(null)
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault()
+  async function handleSubmit(e){
+    e.preventDefault();
 
-    try {
-      const data = isLogin
-        ? await login(form)
-        : await register(form)
-
-      // Login successful
-      if (isLogin) {
+    try{
+      if (isLogin){
+        const data = await login(form)
         const role = data?.profile?.role
 
-        if (role === 'customer') {
-          navigate('/customer', { replace: true })
+        if(role === 'customer'){
+          navigate('/customer', {replace:true})
+          return
+        }
+        if(role === 'admin'){
+          navigate('/admin', {replace:true})
           return
         }
 
-        if (role === 'admin') {
-          navigate('/admin', { replace: true })
-          return
-        }
+        return
       }
 
-      // Show registration result for now
-      setResult(data)
+      //Register
+      await register(form)
 
-    } catch (err) {
-      // Error is already handled inside useAuth
+      //Rehister Successful
+      setIsLogin(true)
+
+      //Clear Form
+      setForm({
+        email: '',
+        password: '',
+        fullName: '',
+        contactNumber: '',
+
+      })
+
+    }catch(err){
+      //Error already handle in useAuth page
     }
   }
-
   return (
     <div className="min-h-screen bg-[#F8F7F5] flex flex-col">
 
