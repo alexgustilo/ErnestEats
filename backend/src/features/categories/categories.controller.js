@@ -46,4 +46,5 @@ async function deleteCategory(req,res) {
         res.status(500).json({error: error.message})
     }
 }
+
 module.exports = {getAllCategories, createCategory, updateCategory , deleteCategory};
