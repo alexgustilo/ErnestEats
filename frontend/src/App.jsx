@@ -6,6 +6,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
+
     <BrowserRouter>
       <Routes>
         <Route path="/auth" element={<AuthPage />} />
@@ -14,6 +15,7 @@ function App() {
         <Route path="/" element={<Navigate to="/auth" replace />}/>
       </Routes>
     </BrowserRouter>
+    
   )
 }
 
