@@ -42,4 +42,19 @@ async function updateProduct(id,name,description,price,image_url,is_available,ca
     return data
 }
 
-module.exports = {getProducts, createProduct, updateProduct};
+//delete products 
+async function deleteProduct(id){
+    const {data,error} = await supabase
+    .from('products')
+    .delete()
+    .eq('id',id)
+    .select()
+    .single()
+
+    if(error){
+        throw error
+    }
+    return data
+}
+
+module.exports = {getProducts, createProduct, updateProduct, deleteProduct};
