@@ -1,4 +1,6 @@
-const {getProducts, createProduct:createProductService, updateProduct:updateProductService} = require('./products.service')
+const {getProducts, createProduct:createProductService, updateProduct:updateProductService,
+        deleteProduct:deleteProductService
+        } = require('./products.service')
 
 async function  getAllProducts(req,res) {
     try{
@@ -35,6 +37,19 @@ async function updateProduct(req,res) {
     }
 }
 
+//delete products
+async function deleteProduct(req,res){
+    console.log('Delete Products')
+    try{
+        const {id} = req.params
+        const product = await deleteProductService(id)
+        res.status(200).json(product)
+
+        console.log(product)
+    }catch(error){
+        res.status(500).json({error:error.message})
+    }
+}
 
 
 
@@ -45,6 +60,6 @@ async function updateProduct(req,res) {
 
 
 
-module.exports = {getAllProducts, createProduct, updateProduct}
+module.exports = {getAllProducts, createProduct, updateProduct, deleteProduct}
 
 
