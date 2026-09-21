@@ -48,6 +48,7 @@ async function deleteProduct(req,res){
         console.log(product)
     }catch(error){
         res.status(500).json({error:error.message})
+        
     }
 }
 
