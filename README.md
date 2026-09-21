@@ -1,13 +1,10 @@
 # ErnestEats
-
 Web-based online ordering system with inventory and sales management for **Ernest Kitchen and Streetfood**.
 
 ## Project Overview
-
 ErnestEats allows customers to browse the menu, place orders, and track order status, while giving admins tools to manage products, orders, inventory, and sales — all through a centralized web platform.
 
 ## Tech Stack
-
 - **Frontend:** React.js, Tailwind CSS
 - **Backend:** Node.js, Express.js
 - **Database & Services:** Supabase (PostgreSQL, Auth, Realtime)
@@ -15,7 +12,6 @@ ErnestEats allows customers to browse the menu, place orders, and track order st
 - **API Testing:** Postman
 
 ## Scope
-
 - Pickup only — cash payment at counter (no online payment)
 - CUSTOMER and ADMIN roles only
 - Per-product inventory tracking (no ingredient-level breakdown)
@@ -38,6 +34,7 @@ npm install
 npm run dev
 \`\`\`
 
+
 ### Backend
 \`\`\`bash
 cd backend
@@ -45,10 +42,9 @@ npm install
 npx nodemon src/server.js
 \`\`\`
 
-### Environment Variables
 
+### Environment Variables
 Create `.env` files in both `frontend/` and `backend/` — see `.env.example` in each folder for required keys. **Never commit `.env` files.**
 
 ## Status
-
 In Development 
