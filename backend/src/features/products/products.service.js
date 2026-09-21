@@ -38,6 +38,7 @@ async function updateProduct(id,name,description,price,image_url,is_available,ca
 
     if(error){
         throw error
+        
     }
     return data
 }
