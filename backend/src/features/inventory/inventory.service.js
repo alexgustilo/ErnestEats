@@ -14,21 +14,20 @@ async function getInventory() {
     return data
 }
 
-
 // create inventory
 async function createInventory(product_id, stock_quantity, low_stock_threshold) {
 
     const { data, error } = await supabase
         .from('inventory')
-        .insert({
-            product_id: product_id,
+        .insert({   
+            product_id: product_id, 
             stock_quantity: stock_quantity,
             low_stock_threshold: low_stock_threshold
-        })
+            })
         .select()
         .single()
 
-    if (error) {
+    if (error) {                                                                        
         throw error
     }
 
