@@ -3,9 +3,11 @@ const router = express.Router()
 
 const {
   getAllSales,
-  createSale
+  createSale,
+  getSalesSummary
 } = require('./sales.controller')
 
+router.get('/summary', getSalesSummary)
 router.get('/', getAllSales)
 router.post('/', createSale)
 
