@@ -14,148 +14,87 @@ async function getOrders() {
   return data
 }
 
-// create order with order items
+// create order and deduct inventory
 async function createOrder(customer_id, items) {
-  if (!customer_id) {
-    throw new Error('customer_id is required')
+  const { data: orderId, error: createError } = await supabase.rpc(
+    'place_order_with_inventory',
+    {
+      p_customer_id: customer_id,
+      p_items: items
+    }
+  )
+
+  if (createError) {
+    throw createError
   }
-
-  if (!Array.isArray(items) || items.length === 0) {
-    throw new Error('At least one order item is required')
-  }
-
-  for (const item of items) {
-    if (!item.product_id) {
-      throw new Error('Each item must have a product_id')
-    }
-
-    if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
-      throw new Error('Each item must have a positive whole-number quantity')
-    }
-  }
-
-  const productIds = [...new Set(items.map((item) => item.product_id))]
-
-  const { data: products, error: productsError } = await supabase
-    .from('products')
-    .select('id, price, is_available')
-    .in('id', productIds)
-
-  if (productsError) {
-    throw productsError
-  }
-
-  const orderItems = items.map((item) => {
-    const product = products.find((product) => product.id === item.product_id)
-
-    if (!product) {
-      throw new Error(`Product ${item.product_id} was not found`)
-    }
-
-    if (!product.is_available) {
-      throw new Error(`Product ${item.product_id} is not available`)
-    }
-
-    const price = Number(product.price)
-
-    if (!Number.isFinite(price) || price < 0) {
-      throw new Error(`Product ${item.product_id} has an invalid price`)
-    }
-
-    return {
-      product_id: product.id,
-      quantity: item.quantity,
-      price
-    }
-  })
-
-  const totalAmountInCents = orderItems.reduce((total, item) => {
-    return total + Math.round(item.price * 100) * item.quantity
-  }, 0)
-
-  const total_amount = (totalAmountInCents / 100).toFixed(2)
 
   const { data: order, error: orderError } = await supabase
     .from('orders')
-    .insert({
-      customer_id: customer_id,
-      status: 'pending',
-      total_amount: total_amount,
-      payment_status: 'unpaid'
-    })
-    .select()
+    .select('*, order_items(*)')
+    .eq('id', orderId)
     .single()
 
   if (orderError) {
     throw orderError
   }
 
-  const itemsToSave = orderItems.map((item) => ({
-    order_id: order.id,
-    product_id: item.product_id,
-    quantity: item.quantity,
-    price: item.price
-  }))
-
-  const { data: savedItems, error: itemsError } = await supabase
-    .from('order_items')
-    .insert(itemsToSave)
-    .select()
-
-  if (itemsError) {
-    throw itemsError
-  }
-
-  return {
-    ...order,
-    order_items: savedItems
-  }
+  return order
 }
 
 // update order status or payment status
 async function updateOrder(id, status, payment_status) {
-  const updates = {}
+  const { data: orderId, error: updateError } = await supabase.rpc(
+    'update_order_with_stock',
+    {
+      p_order_id: id,
+      p_status: status ?? null,
+      p_payment_status: payment_status ?? null
+    }
+  )
 
-  if (status !== undefined) {
-    updates.status = status
+  if (updateError) {
+    throw updateError
   }
 
-  if (payment_status !== undefined) {
-    updates.payment_status = payment_status
-  }
-
-  if (Object.keys(updates).length === 0) {
-    throw new Error('Provide a status or payment_status to update')
-  }
-
-  const { data, error } = await supabase
+  const { data: order, error: orderError } = await supabase
     .from('orders')
-    .update(updates)
-    .eq('id', id)
     .select('*, order_items(*)')
+    .eq('id', orderId)
     .single()
 
-  if (error) {
-    throw error
+  if (orderError) {
+    throw orderError
   }
 
-  return data
+  return order
 }
 
-// delete order
+// cancel order and restore inventory
 async function deleteOrder(id) {
-  const { data, error } = await supabase
-    .from('orders')
-    .delete()
-    .eq('id', id)
-    .select()
-    .single()
+  const { data: orderId, error: cancelError } = await supabase.rpc(
+    'update_order_with_stock',
+    {
+      p_order_id: id,
+      p_status: 'cancelled',
+      p_payment_status: null
+    }
+  )
 
-  if (error) {
-    throw error
+  if (cancelError) {
+    throw cancelError
   }
 
-  return data
+  const { data: order, error: orderError } = await supabase
+    .from('orders')
+    .select('*, order_items(*)')
+    .eq('id', orderId)
+    .single()
+
+  if (orderError) {
+    throw orderError
+  }
+
+  return order
 }
 
 module.exports = {
