@@ -5,6 +5,14 @@ const {
   deleteOrder: deleteOrderService
 } = require('./orders.service')
 
+const {
+  createNotification
+} = require('../notifications/notifications.service')
+
+const {
+  createSale: createSaleService
+} = require('../sales/sales.service')
+
 // get all orders
 async function getAllOrders(req, res) {
   try {
@@ -19,7 +27,6 @@ async function getAllOrders(req, res) {
 async function createOrder(req, res) {
   try {
     const { customer_id, items } = req.body
-
     const order = await createOrderService(customer_id, items)
 
     res.status(201).json(order)
@@ -28,7 +35,7 @@ async function createOrder(req, res) {
   }
 }
 
-// update order
+// update order and create notification or sale when applicable
 async function updateOrder(req, res) {
   try {
     const { id } = req.params
@@ -36,7 +43,30 @@ async function updateOrder(req, res) {
 
     const order = await updateOrderService(id, status, payment_status)
 
-    res.status(200).json(order)
+    let sale = null
+
+    if (order.status === 'completed' && order.payment_status === 'paid') {
+      sale = await createSaleService(order.id)
+    }
+
+    const messageParts = []
+
+    if (status !== undefined) {
+      messageParts.push(`Order status updated to ${status}.`)
+    }
+
+    if (payment_status !== undefined) {
+      messageParts.push(`Payment status updated to ${payment_status}.`)
+    }
+
+    const message = messageParts.join(' ')
+
+    await createNotification(order.customer_id, order.id, message)
+
+    res.status(200).json({
+      order,
+      sale
+    })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
