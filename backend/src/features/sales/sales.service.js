@@ -36,7 +36,7 @@ async function createSale(order_id) {
 
   const { data: existingSale, error: existingSaleError } = await supabase
     .from('sales')
-    .select('id')
+    .select('*')
     .eq('order_id', order_id)
     .maybeSingle()
 
@@ -45,7 +45,7 @@ async function createSale(order_id) {
   }
 
   if (existingSale) {
-    throw new Error('A sale record already exists for this order')
+    return existingSale
   }
 
   const { data, error } = await supabase
@@ -65,7 +65,28 @@ async function createSale(order_id) {
   return data
 }
 
+// get basic sales summary
+async function getSalesSummary() {
+  const { data, error } = await supabase
+    .from('sales')
+    .select('total_amount')
+
+  if (error) {
+    throw error
+  }
+
+  const totalAmountInCents = data.reduce((total, sale) => {
+    return total + Math.round(Number(sale.total_amount) * 100)
+  }, 0)
+
+  return {
+    total_sales: data.length,
+    total_revenue: Number((totalAmountInCents / 100).toFixed(2))
+  }
+}
+
 module.exports = {
   getSales,
-  createSale
+  createSale,
+  getSalesSummary
 }
