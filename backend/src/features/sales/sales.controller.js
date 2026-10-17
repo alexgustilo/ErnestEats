@@ -1,6 +1,7 @@
 const {
   getSales,
-  createSale: createSaleService
+  createSale: createSaleService,
+  getSalesSummary: getSalesSummaryService
 } = require('./sales.service')
 
 // get all sales
@@ -25,7 +26,18 @@ async function createSale(req, res) {
   }
 }
 
+// get sales summary
+async function getSalesSummary(req, res) {
+  try {
+    const summary = await getSalesSummaryService()
+    res.status(200).json(summary)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+
 module.exports = {
   getAllSales,
-  createSale
+  createSale,
+  getSalesSummary
 }
