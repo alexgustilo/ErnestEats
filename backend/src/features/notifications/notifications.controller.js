@@ -4,19 +4,17 @@ const {
   markNotificationAsRead: markNotificationAsReadService
 } = require('./notifications.service')
 
-// get notifications for one customer
-async function getCustomerNotifications(req, res) {
+// Get notifications for the signed-in customer
+async function getMyNotifications(req, res) {
   try {
-    const { customer_id } = req.params
-    const notifications = await getNotificationsService(customer_id)
-
+    const notifications = await getNotificationsService(req.user.id)
     res.status(200).json(notifications)
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
 }
 
-// create notification
+// Create a notification
 async function createNotification(req, res) {
   try {
     const { customer_id, order_id, message } = req.body
@@ -33,11 +31,11 @@ async function createNotification(req, res) {
   }
 }
 
-// mark notification as read
+// Mark the signed-in customer's notification as read
 async function markNotificationAsRead(req, res) {
   try {
     const { id } = req.params
-    const notification = await markNotificationAsReadService(id)
+    const notification = await markNotificationAsReadService(id, req.user.id)
 
     res.status(200).json(notification)
   } catch (error) {
@@ -46,7 +44,7 @@ async function markNotificationAsRead(req, res) {
 }
 
 module.exports = {
-  getCustomerNotifications,
+  getMyNotifications,
   createNotification,
   markNotificationAsRead
 }
