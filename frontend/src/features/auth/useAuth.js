@@ -39,26 +39,22 @@ export function useAuth() {
 
       if (data.user) {
         setUser(data.user)
-        localStorage.setItem(
-          'user',
-          JSON.stringify(data.user)
-        )
+        localStorage.setItem('user', JSON.stringify(data.user))
       }
 
       if (data.profile) {
         setProfile(data.profile)
-        localStorage.setItem(
-          'profile',
-          JSON.stringify(data.profile)
-        )
+        localStorage.setItem('profile', JSON.stringify(data.profile))
+      }
+
+      if (data.session) {
+        localStorage.setItem('session', JSON.stringify(data.session))
       }
 
       return data
-
     } catch (err) {
       setError(err.message)
       throw err
-
     } finally {
       setLoading(false)
     }
@@ -71,32 +67,24 @@ export function useAuth() {
     try {
       const data = await loginRequest(formData)
 
-      // Save user
       if (data.user) {
         setUser(data.user)
-
-        localStorage.setItem(
-          'user',
-          JSON.stringify(data.user)
-        )
+        localStorage.setItem('user', JSON.stringify(data.user))
       }
 
-      // Save profile
       if (data.profile) {
         setProfile(data.profile)
+        localStorage.setItem('profile', JSON.stringify(data.profile))
+      }
 
-        localStorage.setItem(
-          'profile',
-          JSON.stringify(data.profile)
-        )
+      if (data.session) {
+        localStorage.setItem('session', JSON.stringify(data.session))
       }
 
       return data
-
     } catch (err) {
       setError(err.message)
       throw err
-
     } finally {
       setLoading(false)
     }
@@ -107,6 +95,7 @@ export function useAuth() {
 
     localStorage.removeItem('user')
     localStorage.removeItem('profile')
+    localStorage.removeItem('session')
 
     setUser(null)
     setProfile(null)
@@ -119,6 +108,6 @@ export function useAuth() {
     register,
     logout,
     loading,
-    error,
+    error
   }
 }
