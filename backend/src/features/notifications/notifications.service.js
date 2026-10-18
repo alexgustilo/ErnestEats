@@ -1,6 +1,6 @@
 const supabase = require('../../config/supabase')
 
-// get notifications for one customer
+// Get notifications for one customer
 async function getNotifications(customer_id) {
   const { data, error } = await supabase
     .from('notifications')
@@ -15,14 +15,14 @@ async function getNotifications(customer_id) {
   return data
 }
 
-// create notification
+// Create a notification
 async function createNotification(customer_id, order_id, message) {
   const { data, error } = await supabase
     .from('notifications')
     .insert({
-      customer_id: customer_id,
-      order_id: order_id,
-      message: message,
+      customer_id,
+      order_id,
+      message,
       is_read: false
     })
     .select()
@@ -35,12 +35,13 @@ async function createNotification(customer_id, order_id, message) {
   return data
 }
 
-// mark notification as read
-async function markNotificationAsRead(id) {
+// Mark only this customer's notification as read
+async function markNotificationAsRead(id, customer_id) {
   const { data, error } = await supabase
     .from('notifications')
     .update({ is_read: true })
     .eq('id', id)
+    .eq('customer_id', customer_id)
     .select()
     .single()
 
