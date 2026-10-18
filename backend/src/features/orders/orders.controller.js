@@ -1,5 +1,6 @@
 const {
   getOrders,
+  getOrdersByCustomer,
   createOrder: createOrderService,
   updateOrder: updateOrderService,
   deleteOrder: deleteOrderService
@@ -13,7 +14,7 @@ const {
   createSale: createSaleService
 } = require('../sales/sales.service')
 
-// get all orders
+// Get all orders
 async function getAllOrders(req, res) {
   try {
     const orders = await getOrders()
@@ -23,11 +24,21 @@ async function getAllOrders(req, res) {
   }
 }
 
-// create order
+// Get orders belonging to the signed-in customer
+async function getMyOrders(req, res) {
+  try {
+    const orders = await getOrdersByCustomer(req.user.id)
+    res.status(200).json(orders)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+
+// Create an order for the signed-in customer
 async function createOrder(req, res) {
   try {
-    const { customer_id, items } = req.body
-    const order = await createOrderService(customer_id, items)
+    const { items } = req.body
+    const order = await createOrderService(req.user.id, items)
 
     res.status(201).json(order)
   } catch (error) {
@@ -35,7 +46,7 @@ async function createOrder(req, res) {
   }
 }
 
-// update order and create notification or sale when applicable
+// Update order and create notification or sale when applicable
 async function updateOrder(req, res) {
   try {
     const { id } = req.params
@@ -72,7 +83,7 @@ async function updateOrder(req, res) {
   }
 }
 
-// delete order
+// Cancel order
 async function deleteOrder(req, res) {
   try {
     const { id } = req.params
@@ -86,6 +97,7 @@ async function deleteOrder(req, res) {
 
 module.exports = {
   getAllOrders,
+  getMyOrders,
   createOrder,
   updateOrder,
   deleteOrder
