@@ -1,27 +1,30 @@
-import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../../features/auth/useAuth'
+import { Navigate, Route, Routes } from 'react-router-dom'
+import AdminLayout from '../../layouts/AdminLayout'
+import AdminOverview from './AdminOverview'
+import AdminOrders from './AdminOrders'
+import AdminProducts from './AdminProducts'
+import AdminCategories from './AdminCategories'
+import AdminInventory from './AdminInventory'
+import AdminCustomers from './AdminCustomers'
+import AdminNotifications from './AdminNotifications'
+import AdminReports from './AdminReports'
 
 function AdminDashboard() {
-    const { logout } = useAuth()
-    const navigate = useNavigate()
-
-    function handleLogout() {
-        logout()
-        navigate('/auth', { replace: true })
-    }
-
-    return (
-        <div>
-        <h1>Admin Dashboard</h1>
-
-        <p>Welcome to the ErnestEats admin dashboard.</p>
-
-        <button onClick={handleLogout}>
-            Logout
-        </button>
-        </div>
-    )
+  return (
+    <Routes>
+      <Route element={<AdminLayout />}>
+        <Route index element={<AdminOverview />} />
+        <Route path="orders" element={<AdminOrders />} />
+        <Route path="products" element={<AdminProducts />} />
+        <Route path="categories" element={<AdminCategories />} />
+        <Route path="inventory" element={<AdminInventory />} />
+        <Route path="customers" element={<AdminCustomers />} />
+        <Route path="notifications" element={<AdminNotifications />} />
+        <Route path="reports" element={<AdminReports />} />
+        <Route path="*" element={<Navigate to="/admin" replace />} />
+      </Route>
+    </Routes>
+  )
 }
 
-export default AdminDashboard;
-
+export default AdminDashboard
