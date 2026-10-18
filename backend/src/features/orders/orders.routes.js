@@ -1,16 +1,24 @@
 const express = require('express')
 const router = express.Router()
 
+const requireAuth = require('../../middleware/auth.middleware')
+const requireAdmin = require('../../middleware/role.middleware')
+
 const {
   getAllOrders,
+  getMyOrders,
   createOrder,
   updateOrder,
   deleteOrder
 } = require('./orders.controller')
 
-router.get('/', getAllOrders)
-router.post('/', createOrder)
-router.put('/:id', updateOrder)
-router.delete('/:id', deleteOrder)
+// Customer routes
+router.get('/mine', requireAuth, getMyOrders)
+router.post('/', requireAuth, createOrder)
+
+// Admin routes
+router.get('/', requireAuth, requireAdmin, getAllOrders)
+router.put('/:id', requireAuth, requireAdmin, updateOrder)
+router.delete('/:id', requireAuth, requireAdmin, deleteOrder)
 
 module.exports = router
