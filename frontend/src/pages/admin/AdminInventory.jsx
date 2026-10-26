@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useInventory } from '../../features/inventory/useInventory'
 import { useProducts } from '../../features/products/useProducts'
 
@@ -49,11 +49,12 @@ function AdminInventory() {
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState(emptyForm)
+  const [query, setQuery] = useState('')
 
   useEffect(() => {
     fetchInventory().catch(() => {})
     fetchProducts().catch(() => {})
-  }, [])
+  }, [fetchInventory, fetchProducts])
 
   function openAddForm() {
     setEditingId(null)
@@ -103,14 +104,14 @@ function AdminInventory() {
 
       closeForm()
     } catch {
-      // Ipinapakita ng useInventory ang error sa inventoryError.
+      // useInventory exposes the error through inventoryError.
     }
   }
 
-  function getProductName(productId) {
+  const getProductName = useCallback((productId) => {
     const product = products.find((item) => item.id === productId)
     return product?.name || `Product ${String(productId).slice(0, 6)}`
-  }
+  }, [products])
 
   const loading = inventoryLoading || productsLoading
   const error = inventoryError || productsError
@@ -121,8 +122,12 @@ function AdminInventory() {
 
   const trackedProductIds = inventory.map((item) => item.product_id)
   const availableProducts = products.filter(
-    (product) => !trackedProductIds.includes(product.id)
+    (product) => !trackedProductIds.some((id) => String(id) === String(product.id))
   )
+  const visibleInventory = useMemo(() => inventory.filter((item) =>
+    getProductName(item.product_id).toLowerCase().includes(query.trim().toLowerCase())
+  ), [inventory, getProductName, query])
+  const lowStockCount = inventory.filter((item) => Number(item.stock_quantity) <= Number(item.low_stock_threshold)).length
 
   return (
     <section>
@@ -134,13 +139,10 @@ function AdminInventory() {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={openAddForm}
-          className="rounded-lg bg-[#2B211A] px-4 py-2 text-sm font-bold text-white hover:bg-[#44362B]"
-        >
-          + Update stock
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => { fetchInventory().catch(() => {}); fetchProducts().catch(() => {}) }} disabled={loading} className="rounded-lg border border-[#D8BD8F] bg-white px-4 py-2 text-sm font-bold text-[#756957] hover:text-[#241A12] disabled:opacity-50">{loading ? 'Refreshing…' : 'Refresh'}</button>
+          <button type="button" onClick={openAddForm} className="rounded-lg bg-[#2B211A] px-4 py-2 text-sm font-bold text-white hover:bg-[#44362B]">+ Update stock</button>
+        </div>
       </header>
 
       {error && (
@@ -149,7 +151,12 @@ function AdminInventory() {
         </div>
       )}
 
-      <section className="overflow-hidden rounded-2xl border border-[#EAD8B9] bg-white">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search inventory" aria-label="Search inventory" className="w-full max-w-sm rounded-xl border border-[#E6DCCF] bg-white px-4 py-2.5 text-sm outline-none focus:border-[#E8531D]" />
+        <span className={`rounded-full px-3 py-1 text-xs font-bold ${lowStockCount ? 'bg-[#FBEAD3] text-[#8A5A0E]' : 'bg-[#E0EEE5] text-[#315D4D]'}`}>{lowStockCount} low or out of stock</span>
+      </div>
+
+      <section className="overflow-hidden rounded-2xl border border-[#EAD9BC] bg-white">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] border-collapse text-left text-sm">
             <thead className="bg-[#F2ECDD] text-[#927859]">
@@ -163,7 +170,7 @@ function AdminInventory() {
             </thead>
 
             <tbody>
-              {inventory.map((item) => {
+              {visibleInventory.map((item) => {
                 const stock = Number(item.stock_quantity) || 0
                 const threshold = Number(item.low_stock_threshold) || 0
                 const status = getStockStatus(stock, threshold)
@@ -216,13 +223,13 @@ function AdminInventory() {
                 )
               })}
 
-              {!loading && inventory.length === 0 && (
+              {!loading && visibleInventory.length === 0 && (
                 <tr>
                   <td
                     colSpan="5"
                     className="px-4 py-8 text-center text-[#9A8061]"
                   >
-                    No inventory records found.
+                    {inventory.length === 0 ? 'No inventory records found.' : 'No inventory items match this search.'}
                   </td>
                 </tr>
               )}
