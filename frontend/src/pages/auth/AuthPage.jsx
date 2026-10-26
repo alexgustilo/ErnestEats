@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { replace, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../features/auth/useAuth'
 
 function AuthPage() {
@@ -64,7 +64,7 @@ function AuthPage() {
 
       })
 
-    }catch(err){
+    }catch{
       //Error already handle in useAuth page
     }
   }
