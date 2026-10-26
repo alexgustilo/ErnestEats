@@ -33,7 +33,7 @@ function CustomerMenu() {
   useEffect(() => {
     fetchProducts().catch(() => {})
     fetchCategories().catch(() => {})
-  }, [])
+  }, [fetchProducts, fetchCategories])
 
   const availableProducts = useMemo(
     () => products.filter((product) => product.is_available),
@@ -45,7 +45,7 @@ function CustomerMenu() {
 
     return availableProducts.filter((product) => {
       const matchesCategory =
-        activeCategory === 'all' || product.category_id === activeCategory
+        activeCategory === 'all' || String(product.category_id) === String(activeCategory)
 
       const matchesSearch =
         !query ||
@@ -57,7 +57,7 @@ function CustomerMenu() {
   }, [availableProducts, activeCategory, search])
 
   function getCategoryName(categoryId) {
-    return categories.find((category) => category.id === categoryId)?.name ||
+    return categories.find((category) => String(category.id) === String(categoryId))?.name ||
       'Uncategorized'
   }
 
@@ -103,9 +103,9 @@ function CustomerMenu() {
             <button
               key={category.id}
               type="button"
-              onClick={() => setActiveCategory(category.id)}
+              onClick={() => setActiveCategory(String(category.id))}
               className={`shrink-0 rounded-lg px-3 py-2 text-left text-sm font-semibold ${
-                activeCategory === category.id
+                activeCategory === String(category.id)
                   ? 'bg-[#241A12] text-white'
                   : 'text-[#8A7A61] hover:bg-white'
               }`}
@@ -117,6 +117,7 @@ function CustomerMenu() {
       </aside>
 
       <section className="min-w-0 flex-1">
+
         {error && (
           <p className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             {error}
@@ -127,7 +128,7 @@ function CustomerMenu() {
           <p className="py-8 text-center text-[#8A7A61]">Loading menu…</p>
         ) : filteredProducts.length === 0 ? (
           <p className="rounded-2xl border border-[#EAD9BC] bg-white p-8 text-center text-[#8A7A61]">
-            Walang available products na tugma sa pinili mo.
+            No available products match your search or selected category.
           </p>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
