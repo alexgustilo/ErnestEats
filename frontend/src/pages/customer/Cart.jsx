@@ -17,7 +17,7 @@ function Cart() {
       {!cart.length ? (
         <section className="mt-7 rounded-2xl border border-[#EAD9BC] bg-white p-10 text-center">
           <p className="text-lg font-bold">Your cart is empty.</p>
-          <p className="mt-2 text-sm text-[#8A7A61]">Pumili muna ng pagkain mula sa menu.</p>
+          <p className="mt-2 text-sm text-[#8A7A61]">Choose some items from the menu first.</p>
           <Link to="/customer/menu" className="mt-5 inline-flex rounded-xl bg-[#E8531D] px-5 py-3 text-sm font-bold text-white">Browse menu</Link>
         </section>
       ) : (
