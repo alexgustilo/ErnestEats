@@ -32,3 +32,6 @@ Thumbs.db
 
 # Vite cache
 frontend/.vite/
+
+# Test Assets
+test-assets
