@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { getMyOrders } from '../../features/orders/ordersApi'
 
 const statusSteps = [
@@ -73,7 +73,7 @@ function MyOrders() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  async function loadOrders() {
+  const loadOrders = useCallback(async function loadOrders() {
     setLoading(true)
     setError(null)
 
@@ -85,11 +85,21 @@ function MyOrders() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
-    loadOrders()
-  }, [])
+    Promise.resolve().then(loadOrders)
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') loadOrders()
+    }
+    const timer = window.setInterval(refreshWhenVisible, 30000)
+    document.addEventListener('visibilitychange', refreshWhenVisible)
+
+    return () => {
+      window.clearInterval(timer)
+      document.removeEventListener('visibilitychange', refreshWhenVisible)
+    }
+  }, [loadOrders])
 
   return (
     <main className="min-h-[60vh]">
@@ -119,9 +129,9 @@ function MyOrders() {
           </p>
         ) : !error && orders.length === 0 ? (
           <section className="max-w-4xl rounded-2xl border border-[#EAD9BC] bg-white p-7 shadow-[0_8px_30px_rgba(66,45,22,.04)]">
-            <p className="font-bold">Wala ka pang orders.</p>
+            <p className="font-bold">You don’t have any orders yet.</p>
             <p className="mt-2 text-sm text-[#8A7A61]">
-              Makikita rito ang order status pagkatapos mong mag-place ng order.
+              Your order status will appear here after you place an order.
             </p>
           </section>
         ) : (
