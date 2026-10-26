@@ -1,34 +1,23 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { registerRequest, loginRequest } from './authApi'
 
+function readStoredJson(key) {
+  const savedValue = localStorage.getItem(key)
+  if (!savedValue) return null
+
+  try {
+    return JSON.parse(savedValue)
+  } catch {
+    localStorage.removeItem(key)
+    return null
+  }
+}
+
 export function useAuth() {
-  const [user, setUser] = useState(null)
-  const [profile, setProfile] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState(() => readStoredJson('user'))
+  const [profile, setProfile] = useState(() => readStoredJson('profile'))
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-
-  useEffect(() => {
-    const savedUser = localStorage.getItem('user')
-    const savedProfile = localStorage.getItem('profile')
-
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser))
-      } catch {
-        localStorage.removeItem('user')
-      }
-    }
-
-    if (savedProfile) {
-      try {
-        setProfile(JSON.parse(savedProfile))
-      } catch {
-        localStorage.removeItem('profile')
-      }
-    }
-
-    setLoading(false)
-  }, [])
 
   async function register(formData) {
     setError(null)
