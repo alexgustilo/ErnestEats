@@ -6,7 +6,23 @@ const CART_EVENT = 'ernesteats-cart-updated'
 function readCart() {
   try {
     const saved = JSON.parse(localStorage.getItem(CART_KEY) || '[]')
-    return Array.isArray(saved) ? saved : []
+    if (!Array.isArray(saved)) return []
+
+    return saved
+      .filter((item) => item && (item.id ?? item.product_id) != null)
+      .map((item) => {
+        const id = item.id ?? item.product_id
+        const quantity = Math.max(1, Math.floor(Number(item.quantity) || 1))
+        const price = Number(item.price)
+
+        return {
+          ...item,
+          id,
+          product_id: id,
+          quantity,
+          price: Number.isFinite(price) && price >= 0 ? price : 0
+        }
+      })
   } catch {
     return []
   }
@@ -30,13 +46,15 @@ export function useCart() {
     }
   }, [])
 
-  const addItem = useCallback((product) => {
+  const addItem = useCallback((product, quantity = 1) => {
     const current = readCart()
-    const id = product.id || product.product_id
-    const exists = current.some((item) => (item.id || item.product_id) === id)
+    const id = product.id ?? product.product_id
+    if (id == null) return
+    const amount = Math.max(1, Math.floor(Number(quantity) || 1))
+    const exists = current.some((item) => String(item.id) === String(id))
     const next = exists
-      ? current.map((item) => (item.id || item.product_id) === id
-          ? { ...item, quantity: Number(item.quantity || 0) + 1 }
+      ? current.map((item) => String(item.id) === String(id)
+          ? { ...item, quantity: Number(item.quantity || 0) + amount }
           : item)
       : [...current, {
           id,
@@ -44,7 +62,7 @@ export function useCart() {
           name: product.name,
           price: Number(product.price),
           image_url: product.image_url || null,
-          quantity: 1
+          quantity: amount
         }]
     saveCart(next)
     setCart(next)
@@ -52,15 +70,16 @@ export function useCart() {
 
   const updateQuantity = useCallback((id, quantity) => {
     const current = readCart()
-    const next = quantity <= 0
-      ? current.filter((item) => (item.id || item.product_id) !== id)
-      : current.map((item) => (item.id || item.product_id) === id ? { ...item, quantity } : item)
+    const normalizedQuantity = Math.floor(Number(quantity))
+    const next = !Number.isFinite(normalizedQuantity) || normalizedQuantity <= 0
+      ? current.filter((item) => String(item.id) !== String(id))
+      : current.map((item) => String(item.id) === String(id) ? { ...item, quantity: normalizedQuantity } : item)
     saveCart(next)
     setCart(next)
   }, [])
 
   const removeItem = useCallback((id) => {
-    const next = readCart().filter((item) => (item.id || item.product_id) !== id)
+    const next = readCart().filter((item) => String(item.id) !== String(id))
     saveCart(next)
     setCart(next)
   }, [])
