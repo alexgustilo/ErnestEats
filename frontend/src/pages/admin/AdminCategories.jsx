@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useCategories } from '../../features/categories/useCategories'
 import { useProducts } from '../../features/products/useProducts'
 
@@ -23,11 +23,12 @@ function AdminCategories() {
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [name, setName] = useState('')
+  const [query, setQuery] = useState('')
 
   useEffect(() => {
     fetchCategories().catch(() => {})
     fetchProducts().catch(() => {})
-  }, [])
+  }, [fetchCategories, fetchProducts])
 
   function openAddForm() {
     setEditingId(null)
@@ -61,13 +62,18 @@ function AdminCategories() {
 
       closeForm()
     } catch {
-      // Ipinapakita ng useCategories ang error sa categoriesError.
+      // useCategories exposes the error through categoriesError.
     }
   }
 
   async function handleDelete(category) {
+    const productCount = products.filter(
+      (product) => String(product.category_id) === String(category.id)
+    ).length
     const confirmed = window.confirm(
-      `Delete the "${category.name}" category?`
+      productCount > 0
+        ? `Delete "${category.name}" and its ${productCount} product${productCount === 1 ? '' : 's'}? Products that are part of existing orders cannot be deleted.`
+        : `Delete the "${category.name}" category?`
     )
 
     if (!confirmed) return
@@ -75,12 +81,15 @@ function AdminCategories() {
     try {
       await removeCategory(category.id)
     } catch {
-      // Ipinapakita ng useCategories ang error sa categoriesError.
+      // useCategories exposes the error through categoriesError.
     }
   }
 
   const loading = categoriesLoading || productsLoading
   const error = categoriesError || productsError
+  const visibleCategories = useMemo(() => categories.filter((category) =>
+    category.name.toLowerCase().includes(query.trim().toLowerCase())
+  ), [categories, query])
 
   return (
     <section>
@@ -92,13 +101,10 @@ function AdminCategories() {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={openAddForm}
-          className="rounded-lg bg-[#2B211A] px-4 py-2 text-sm font-bold text-white hover:bg-[#44362B]"
-        >
-          + Add category
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => { fetchCategories().catch(() => {}); fetchProducts().catch(() => {}) }} disabled={loading} className="rounded-lg border border-[#D8BD8F] bg-white px-4 py-2 text-sm font-bold text-[#756957] hover:text-[#241A12] disabled:opacity-50">{loading ? 'Refreshing…' : 'Refresh'}</button>
+          <button type="button" onClick={openAddForm} className="rounded-lg bg-[#2B211A] px-4 py-2 text-sm font-bold text-white hover:bg-[#44362B]">+ Add category</button>
+        </div>
       </header>
 
       {error && (
@@ -106,6 +112,11 @@ function AdminCategories() {
           {error}
         </div>
       )}
+
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search categories" aria-label="Search categories" className="w-full max-w-sm rounded-xl border border-[#E6DCCF] bg-white px-4 py-2.5 text-sm outline-none focus:border-[#E8531D]" />
+        <span className="text-sm text-[#8A7A61]">{visibleCategories.length} {visibleCategories.length === 1 ? 'category' : 'categories'}</span>
+      </div>
 
       <section className="overflow-hidden rounded-2xl border border-[#EAD8B9] bg-white">
         <div className="overflow-x-auto">
@@ -119,9 +130,9 @@ function AdminCategories() {
             </thead>
 
             <tbody>
-              {categories.map((category) => {
+              {visibleCategories.map((category) => {
                 const productCount = products.filter(
-                  (product) => product.category_id === category.id
+                  (product) => String(product.category_id) === String(category.id)
                 ).length
 
                 return (
@@ -157,13 +168,13 @@ function AdminCategories() {
                 )
               })}
 
-              {!loading && categories.length === 0 && (
+              {!loading && visibleCategories.length === 0 && (
                 <tr>
                   <td
                     colSpan="3"
                     className="px-4 py-8 text-center text-[#9A8061]"
                   >
-                    No categories found.
+                    {categories.length === 0 ? 'No categories found.' : 'No categories match this search.'}
                   </td>
                 </tr>
               )}
