@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSales } from '../../features/sales/useSales'
+import { useOrders } from '../../features/orders/useOrders'
+import { useProducts } from '../../features/products/useProducts'
 
 const pad = (n) => String(n).padStart(2, '0')
 const dateKey = (date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
@@ -15,8 +17,14 @@ function peso(value) {
 
 function AdminReports() {
   const { sales, fetchSales, loading, error } = useSales()
+  const { orders, fetchOrders, loading: ordersLoading, error: ordersError } = useOrders()
+  const { products, fetchProducts, loading: productsLoading, error: productsError } = useProducts()
   const [range, setRange] = useState('daily')
-  useEffect(() => { fetchSales().catch(() => {}) }, [])
+  useEffect(() => {
+    fetchSales().catch(() => {})
+    fetchOrders().catch(() => {})
+    fetchProducts().catch(() => {})
+  }, [fetchOrders, fetchProducts, fetchSales])
 
   const chart = useMemo(() => {
     const today = new Date()
@@ -58,18 +66,45 @@ function AdminReports() {
   const total = chart.reduce((sum, bin) => sum + bin.value, 0)
   const max = Math.max(1, ...chart.map((bin) => bin.value))
   const filteredCount = chart.reduce((sum, bin) => sum + bin.count, 0)
-  const recentSales = [...sales].sort((a, b) => new Date(b.sold_at) - new Date(a.sold_at)).slice(0, 6)
+  const chartKeys = new Set(chart.map((bin) => bin.key))
+  const orderById = new Map(orders.map((order) => [String(order.id), order]))
+  const productById = new Map(products.map((product) => [String(product.id), product]))
+  const bestSellers = sales.reduce((totals, sale) => {
+    if (!sale.sold_at) return totals
+    const date = new Date(sale.sold_at)
+    if (Number.isNaN(date.getTime())) return totals
+    const key = range === 'daily' ? dateKey(date) : range === 'weekly' ? dateKey(mondayOf(date)) : monthKey(date)
+    if (!chartKeys.has(key)) return totals
+
+    const order = orderById.get(String(sale.order_id))
+    for (const item of order?.order_items || []) {
+      const productId = String(item.product_id)
+      const product = productById.get(productId)
+      if (!product) continue
+      const current = totals.get(productId) || { id: productId, name: product.name, units: 0 }
+      current.units += Number(item.quantity) || 0
+      totals.set(productId, current)
+    }
+    return totals
+  }, new Map())
+  const rankedProducts = [...bestSellers.values()].sort((a, b) => b.units - a.units).slice(0, 5)
+  const pageLoading = loading || ordersLoading || productsLoading
+  const pageError = error || ordersError || productsError
+
+  async function refreshReport() {
+    await Promise.allSettled([fetchSales(), fetchOrders(), fetchProducts()])
+  }
 
   return <section>
-    <header className="mb-6"><h1 className="text-2xl font-extrabold">Sales / Reports</h1><p className="mt-1 text-sm text-[#8A7A61]">Recorded revenue from completed and paid orders</p></header>
-    {error && <p role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+    <header className="mb-6 flex flex-wrap items-end justify-between gap-4"><div><h1 className="text-2xl font-extrabold">Sales / Reports</h1><p className="mt-1 text-sm text-[#8A7A61]">Recorded revenue from completed and paid orders</p></div><button type="button" onClick={refreshReport} disabled={pageLoading} className="rounded-lg border border-[#D8BD8F] bg-white px-4 py-2 text-sm font-bold text-[#756957] hover:text-[#241A12] disabled:opacity-50">{pageLoading ? 'Refreshing…' : 'Refresh'}</button></header>
+    {pageError && <p role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{pageError}</p>}
     <div className="mb-5 flex flex-wrap gap-2">{['daily', 'weekly', 'monthly'].map((item) => <button key={item} type="button" aria-pressed={range === item} onClick={() => setRange(item)} className={`rounded-lg border px-4 py-2 text-sm font-bold capitalize transition ${range === item ? 'border-[#241A12] bg-[#241A12] text-white' : 'border-[#D8BD8F] bg-white text-[#8A7A61] hover:text-[#241A12]'}`}>{item}</button>)}</div>
     <div className="mb-5 grid gap-4 sm:grid-cols-3">
-      {[['Revenue in period', loading ? '…' : peso(total)], ['Sales records', loading ? '…' : String(filteredCount)], ['Average sale', loading ? '…' : peso(filteredCount ? total / filteredCount : 0)]].map(([label, value]) => <article key={label} className="rounded-2xl border border-[#EAD9BC] bg-white p-5"><p className="text-sm text-[#8A7A61]">{label}</p><strong className="mt-2 block text-2xl font-extrabold">{value}</strong></article>)}
+      {[['Total revenue', pageLoading ? '…' : peso(total)], ['Completed sales', pageLoading ? '…' : String(filteredCount)], ['Average sale', pageLoading ? '…' : peso(filteredCount ? total / filteredCount : 0)]].map(([label, value]) => <article key={label} className="rounded-2xl border border-[#EAD9BC] bg-white p-5"><p className="text-sm text-[#8A7A61]">{label}</p><strong className="mt-2 block text-2xl font-extrabold">{value}</strong></article>)}
     </div>
     <div className="grid gap-5 xl:grid-cols-2">
-      <section className="rounded-2xl border border-[#EAD9BC] bg-white p-5 sm:p-6"><h2 className="mb-5 font-extrabold">Revenue · {range === 'daily' ? 'last 7 days' : range === 'weekly' ? 'last 7 weeks' : 'last 6 months'}</h2><div className="flex h-48 items-end gap-2 border-b border-[#EAD9BC] pb-0 sm:gap-3">{chart.map((bin) => <div key={bin.key} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end"><span className="mb-1 truncate text-[10px] text-[#8A7A61]">{bin.value ? peso(bin.value) : ''}</span><div className="w-full rounded-t-md bg-[#E8531D]" style={{ height: `${bin.value ? Math.max(7, (bin.value / max) * 72) : 0}%` }} title={`${bin.label}: ${peso(bin.value)}`} /><span className="mt-2 text-[10px] font-semibold text-[#8A7A61]">{bin.label}</span></div>)}</div>{!loading && sales.length === 0 && <p className="mt-4 text-sm text-[#8A7A61]">No sales recorded yet.</p>}</section>
-      <section className="overflow-hidden rounded-2xl border border-[#EAD9BC] bg-white"><div className="px-5 py-5 sm:px-6"><h2 className="font-extrabold">Recent sales</h2><p className="mt-1 text-sm text-[#8A7A61]">Latest sales returned by the backend</p></div><div className="overflow-x-auto"><table className="w-full min-w-[420px] border-collapse text-left text-sm"><thead className="bg-[#F0ECDD] text-[#8A7A61]"><tr><th className="px-4 py-3 font-semibold">Order</th><th className="px-4 py-3 font-semibold">Date</th><th className="px-4 py-3 font-semibold">Revenue</th></tr></thead><tbody>{recentSales.map((sale) => <tr key={sale.id} className="border-t border-[#EAD9BC]"><td className="px-4 py-3">#{String(sale.order_id || sale.id).slice(0, 8)}</td><td className="px-4 py-3">{sale.sold_at ? new Date(sale.sold_at).toLocaleDateString('en-PH') : '—'}</td><td className="px-4 py-3 font-semibold">{peso(sale.total_amount)}</td></tr>)}{!loading && recentSales.length === 0 && <tr><td colSpan="3" className="px-4 py-8 text-center text-[#8A7A61]">No sales recorded yet.</td></tr>}</tbody></table></div>{loading && <p className="border-t border-[#EAD9BC] px-4 py-3 text-sm text-[#8A7A61]">Loading sales…</p>}</section>
+      <section className="rounded-2xl border border-[#EAD9BC] bg-white p-5 sm:p-6"><h2 className="mb-5 font-extrabold">Revenue · {range === 'daily' ? 'last 7 days' : range === 'weekly' ? 'last 7 weeks' : 'last 6 months'}</h2><div className="flex h-48 items-end gap-2 border-b border-[#EAD9BC] pb-0 sm:gap-3">{chart.map((bin) => <div key={bin.key} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end"><span className="mb-1 truncate text-[10px] text-[#8A7A61]">{bin.value ? peso(bin.value) : ''}</span><div className="w-full rounded-t-md bg-[#E8531D]" style={{ height: `${bin.value ? Math.max(7, (bin.value / max) * 72) : 0}%` }} title={`${bin.label}: ${peso(bin.value)}`} /><span className="mt-2 text-[10px] font-semibold text-[#8A7A61]">{bin.label}</span></div>)}</div>{!pageLoading && sales.length === 0 && <p className="mt-4 text-sm text-[#8A7A61]">No sales recorded yet.</p>}</section>
+      <section className="overflow-hidden rounded-2xl border border-[#EAD9BC] bg-white"><div className="px-5 py-5 sm:px-6"><h2 className="font-extrabold">Best-selling products</h2><p className="mt-1 text-sm text-[#8A7A61]">Units sold during the selected period</p></div><div className="overflow-x-auto"><table className="w-full min-w-[360px] border-collapse text-left text-sm"><thead className="bg-[#F0ECDD] text-[#8A7A61]"><tr><th className="px-4 py-3 font-semibold">Product</th><th className="px-4 py-3 font-semibold">Units sold</th></tr></thead><tbody>{rankedProducts.map((product) => <tr key={product.id} className="border-t border-[#EAD9BC]"><td className="px-4 py-3">{product.name}</td><td className="px-4 py-3 font-semibold">{product.units}</td></tr>)}{!pageLoading && rankedProducts.length === 0 && <tr><td colSpan="2" className="px-4 py-8 text-center text-[#8A7A61]">No product sales for this period.</td></tr>}</tbody></table></div>{pageLoading && <p className="border-t border-[#EAD9BC] px-4 py-3 text-sm text-[#8A7A61]">Loading report…</p>}</section>
     </div>
   </section>
 }
