@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import {
   getInventory,
   createInventory,
@@ -11,7 +11,7 @@ export function useInventory() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  async function fetchInventory() {
+  const fetchInventory = useCallback(async function fetchInventory() {
     setLoading(true)
     setError(null)
 
@@ -25,9 +25,9 @@ export function useInventory() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  async function addInventory(inventoryItem) {
+  const addInventory = useCallback(async function addInventory(inventoryItem) {
     setLoading(true)
     setError(null)
 
@@ -41,9 +41,9 @@ export function useInventory() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  async function editInventory(id, inventoryItem) {
+  const editInventory = useCallback(async function editInventory(id, inventoryItem) {
     setLoading(true)
     setError(null)
 
@@ -59,9 +59,9 @@ export function useInventory() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  async function removeInventory(id) {
+  const removeInventory = useCallback(async function removeInventory(id) {
     setLoading(true)
     setError(null)
 
@@ -77,7 +77,7 @@ export function useInventory() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   return {
     inventory,
