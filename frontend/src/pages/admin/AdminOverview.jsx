@@ -92,7 +92,7 @@ function AdminOverview() {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [fetchInventory, fetchOrders, fetchSales])
 
   const ordersToday = orders.filter((order) => isToday(order.created_at))
 
@@ -116,6 +116,16 @@ function AdminOverview() {
 
   const loading = ordersLoading || salesLoading || inventoryLoading
   const error = loadError || ordersError || salesError || inventoryError
+  const todayLabel = new Date().toLocaleDateString('en-PH', {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric'
+  })
+
+  async function refreshOverview() {
+    setLoadError(null)
+    await Promise.allSettled([fetchOrders(), fetchSales(), fetchInventory()])
+  }
 
   return (
     <>
@@ -123,17 +133,14 @@ function AdminOverview() {
         <div>
           <h1 className="text-2xl font-extrabold">Overview</h1>
           <p className="mt-1 text-sm text-[#9A8061]">
-            Today&apos;s snapshot
+            Today&apos;s snapshot · {todayLabel}
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => navigate('/admin/reports')}
-          className="rounded-lg bg-[#2B211A] px-4 py-2 text-sm font-bold text-white hover:bg-[#44362B]"
-        >
-          View sales report
-        </button>
+        <div className="flex gap-2">
+          <button type="button" onClick={refreshOverview} disabled={loading} className="rounded-lg border border-[#D8BD8F] bg-white px-4 py-2 text-sm font-bold text-[#756957] hover:text-[#241A12] disabled:opacity-50">{loading ? 'Refreshing…' : 'Refresh'}</button>
+          <button type="button" onClick={() => navigate('/admin/reports')} className="rounded-lg bg-[#2B211A] px-4 py-2 text-sm font-bold text-white hover:bg-[#44362B]">View sales report</button>
+        </div>
       </header>
 
       {error && (
