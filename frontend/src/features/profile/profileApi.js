@@ -3,7 +3,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 function authHeaders(extra = {}) {
   let session
   try { session = JSON.parse(localStorage.getItem('session') || 'null') } catch { session = null }
-  if (!session?.access_token) throw new Error('Mag-log in ulit para ma-update ang profile mo.')
+  if (!session?.access_token) throw new Error('Please log in again to update your profile.')
   return { ...extra, Authorization: `Bearer ${session.access_token}` }
 }
 
@@ -15,6 +15,13 @@ async function parseResponse(res, fallback) {
 
 export async function getMyProfile() {
   return parseResponse(await fetch(`${API_URL}/profile/me`, { headers: authHeaders() }), 'Failed to load profile')
+}
+
+export async function getCustomerProfiles() {
+  return parseResponse(
+    await fetch(`${API_URL}/profile/customers`, { headers: authHeaders() }),
+    'Failed to load customer profiles'
+  )
 }
 
 export async function updateMyProfile(profile) {
