@@ -6,10 +6,21 @@ async function getProfile(id) {
   return data
 }
 
+async function getCustomerProfiles() {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, full_name, contact_number')
+    .eq('role', 'customer')
+    .order('full_name', { ascending: true })
+
+  if (error) throw error
+  return data
+}
+
 async function updateProfile(id, updates) {
   const { data, error } = await supabase.from('profiles').update(updates).eq('id', id).select('id, full_name, contact_number, role').single()
   if (error) throw error
   return data
 }
 
-module.exports = { getProfile, updateProfile }
+module.exports = { getProfile, getCustomerProfiles, updateProfile }
