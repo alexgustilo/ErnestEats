@@ -4,7 +4,7 @@ const supabase = require('../../config/supabase')
 async function getOrders() {
   const { data, error } = await supabase
     .from('orders')
-    .select('*, order_items(*)')
+    .select('*, order_items(*, product:products(name))')
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -18,7 +18,7 @@ async function getOrders() {
 async function getOrdersByCustomer(customerId) {
   const { data, error } = await supabase
     .from('orders')
-    .select('*, order_items(*)')
+    .select('*, order_items(*, product:products(name))')
     .eq('customer_id', customerId)
     .order('created_at', { ascending: false })
 
@@ -45,7 +45,7 @@ async function createOrder(customer_id, items) {
 
   const { data: order, error: orderError } = await supabase
     .from('orders')
-    .select('*, order_items(*)')
+    .select('*, order_items(*, product:products(name))')
     .eq('id', orderId)
     .single()
 
@@ -73,7 +73,7 @@ async function updateOrder(id, status, payment_status) {
 
   const { data: order, error: orderError } = await supabase
     .from('orders')
-    .select('*, order_items(*)')
+    .select('*, order_items(*, product:products(name))')
     .eq('id', orderId)
     .single()
 
@@ -101,7 +101,7 @@ async function deleteOrder(id) {
 
   const { data: order, error: orderError } = await supabase
     .from('orders')
-    .select('*, order_items(*)')
+    .select('*, order_items(*, product:products(name))')
     .eq('id', orderId)
     .single()
 
