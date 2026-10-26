@@ -26,10 +26,14 @@ function CustomerLayout() {
     }
     const refreshProfile = () => setProfile(readProfile())
     refreshNotifications()
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') refreshNotifications()
+    }, 30000)
     window.addEventListener('ernesteats-notifications-updated', refreshNotifications)
     window.addEventListener('ernesteats-profile-updated', refreshProfile)
     return () => {
       active = false
+      window.clearInterval(timer)
       window.removeEventListener('ernesteats-notifications-updated', refreshNotifications)
       window.removeEventListener('ernesteats-profile-updated', refreshProfile)
     }
