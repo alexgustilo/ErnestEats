@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import {
   getOrders,
   createOrder,
@@ -11,7 +11,7 @@ export function useOrders() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  async function fetchOrders() {
+  const fetchOrders = useCallback(async function fetchOrders() {
     setLoading(true)
     setError(null)
 
@@ -25,9 +25,9 @@ export function useOrders() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  async function addOrder(order) {
+  const addOrder = useCallback(async function addOrder(order) {
     setLoading(true)
     setError(null)
 
@@ -41,9 +41,9 @@ export function useOrders() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  async function editOrder(id, updates) {
+  const editOrder = useCallback(async function editOrder(id, updates) {
     setLoading(true)
     setError(null)
 
@@ -64,9 +64,9 @@ export function useOrders() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  async function cancelExistingOrder(id) {
+  const cancelExistingOrder = useCallback(async function cancelExistingOrder(id) {
     setLoading(true)
     setError(null)
 
@@ -87,7 +87,7 @@ export function useOrders() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   return {
     orders,
