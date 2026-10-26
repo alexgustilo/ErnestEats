@@ -3,7 +3,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 function authHeaders(extra = {}) {
   let session
   try { session = JSON.parse(localStorage.getItem('session') || 'null') } catch { session = null }
-  if (!session?.access_token) throw new Error('Mag-log in ulit para makita ang notifications mo.')
+  if (!session?.access_token) throw new Error('Please log in again to view your notifications.')
   return { ...extra, Authorization: `Bearer ${session.access_token}` }
 }
 
