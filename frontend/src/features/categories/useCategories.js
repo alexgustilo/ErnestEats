@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import {
   getCategories,
   createCategory,
@@ -11,7 +11,7 @@ export function useCategories() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  async function fetchCategories() {
+  const fetchCategories = useCallback(async function fetchCategories() {
     setLoading(true)
     setError(null)
 
@@ -25,9 +25,9 @@ export function useCategories() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  async function addCategory(category) {
+  const addCategory = useCallback(async function addCategory(category) {
     setLoading(true)
     setError(null)
 
@@ -44,9 +44,9 @@ export function useCategories() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  async function editCategory(id, category) {
+  const editCategory = useCallback(async function editCategory(id, category) {
     setLoading(true)
     setError(null)
 
@@ -54,7 +54,7 @@ export function useCategories() {
       const data = await updateCategory(id, category)
       setCategories((previousCategories) =>
         previousCategories.map((item) =>
-          item.id === id ? data : item
+          String(item.id) === String(id) ? data : item
         )
       )
       return data
@@ -64,16 +64,16 @@ export function useCategories() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  async function removeCategory(id) {
+  const removeCategory = useCallback(async function removeCategory(id) {
     setLoading(true)
     setError(null)
 
     try {
       const data = await deleteCategory(id)
       setCategories((previousCategories) =>
-        previousCategories.filter((item) => item.id !== id)
+        previousCategories.filter((item) => String(item.id) !== String(id))
       )
       return data
     } catch (error) {
@@ -82,7 +82,7 @@ export function useCategories() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   return {
     categories,
