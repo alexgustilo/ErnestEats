@@ -1,61 +1,96 @@
 const supabase = require('../../config/supabase')
+const { uploadProductImage, removeProductImage } = require('./productImages.service')
 
-async function getProducts(){
-    const {data,error} = await supabase
+async function getProducts() {
+  const { data, error } = await supabase
     .from('products')
     .select('*')
-    
-    if (error){
-        throw error;
-    }
-    return data;
-}   
 
-//create products 
-async function createProduct(name,description,price,image_url,is_available,category_id){
-    const {data,error} = await supabase
+  if (error) throw error
+  return data
+}
+
+async function createProduct(product, imageFile) {
+  const uploadedImage = await uploadProductImage(imageFile)
+  const { data, error } = await supabase
     .from('products')
-    .insert({name:name, description:description, price:price , image_url:image_url,
-            is_available:is_available, category_id:category_id})
+    .insert({ ...product, image_url: uploadedImage?.url || null })
     .select()
     .single()
 
-    if(error){
-        throw error
-    }
-    return data
+  if (error) {
+    if (uploadedImage) await removeProductImage(uploadedImage.url)
+    throw error
+  }
+
+  return data
 }
 
-//update products
-async function updateProduct(id,name,description,price,image_url,is_available,category_id) {
-    const {data,error} = await supabase
+async function updateProduct(id, product, imageFile) {
+  const { data: existingProduct, error: findError } = await supabase
     .from('products')
-    .update({name:name, description:description, price:price, image_url:image_url,
-            is_available:is_available, category_id:category_id})
+    .select('id, image_url')
+    .eq('id', id)
+    .single()
+
+  if (findError) {
+    if (findError.code === 'PGRST116') {
+      const notFound = new Error('Product not found.')
+      notFound.statusCode = 404
+      throw notFound
+    }
+    throw findError
+  }
+
+  const uploadedImage = await uploadProductImage(imageFile)
+  const updates = { ...product }
+  if (uploadedImage) updates.image_url = uploadedImage.url
+
+  const { data, error } = await supabase
+    .from('products')
+    .update(updates)
     .eq('id', id)
     .select()
     .single()
 
-    if(error){
-        throw error
-        
-    }
-    return data
+  if (error) {
+    if (uploadedImage) await removeProductImage(uploadedImage.url)
+    throw error
+  }
+
+  if (uploadedImage && existingProduct.image_url) {
+    await removeProductImage(existingProduct.image_url)
+  }
+
+  return data
 }
 
-//delete products 
-async function deleteProduct(id){
-    const {data,error} = await supabase
+async function deleteProduct(id) {
+  const { data: existingProduct, error: findError } = await supabase
+    .from('products')
+    .select('id, image_url')
+    .eq('id', id)
+    .single()
+
+  if (findError) {
+    if (findError.code === 'PGRST116') {
+      const notFound = new Error('Product not found.')
+      notFound.statusCode = 404
+      throw notFound
+    }
+    throw findError
+  }
+
+  const { data, error } = await supabase
     .from('products')
     .delete()
-    .eq('id',id)
+    .eq('id', id)
     .select()
     .single()
 
-    if(error){
-        throw error
-    }
-    return data
+  if (error) throw error
+  await removeProductImage(existingProduct.image_url)
+  return data
 }
 
-module.exports = {getProducts, createProduct, updateProduct, deleteProduct};
+module.exports = { getProducts, createProduct, updateProduct, deleteProduct }
