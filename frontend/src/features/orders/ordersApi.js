@@ -1,7 +1,7 @@
 const API_URL =
   import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
-// Kunin ang login token at idagdag sa request headers
+// Read the login token and add it to request headers
 function getAuthHeaders(extraHeaders = {}) {
   let session
 
@@ -14,7 +14,7 @@ function getAuthHeaders(extraHeaders = {}) {
   const token = session?.access_token
 
   if (!token) {
-    throw new Error('Mag-log in ulit para magamit ang orders.')
+    throw new Error('Please log in again to access your orders.')
   }
 
   return {
@@ -23,7 +23,7 @@ function getAuthHeaders(extraHeaders = {}) {
   }
 }
 
-// Kunin ang lahat ng orders para sa admin
+// Get all orders for the admin
 export async function getOrders() {
   const res = await fetch(`${API_URL}/orders`, {
     headers: getAuthHeaders()
@@ -38,7 +38,7 @@ export async function getOrders() {
   return data
 }
 
-// Kunin ang orders ng naka-login na customer
+// Get orders for the signed-in customer
 export async function getMyOrders() {
   const res = await fetch(`${API_URL}/orders/mine`, {
     headers: getAuthHeaders()
@@ -53,7 +53,7 @@ export async function getMyOrders() {
   return data
 }
 
-// Gumawa ng order para sa naka-login na customer
+// Create an order for the signed-in customer
 // Format: { items: [{ product_id, quantity }] }
 export async function createOrder(order) {
   const res = await fetch(`${API_URL}/orders`, {
@@ -92,7 +92,7 @@ export async function updateOrder(id, updates) {
   return data
 }
 
-// I-cancel ang order; tiyaking pinapayagan ito ng backend route mo
+// Cancel an order; confirm that the backend route allows this action
 export async function cancelOrder(id) {
   const res = await fetch(`${API_URL}/orders/${id}`, {
     method: 'DELETE',
