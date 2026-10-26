@@ -1,4 +1,12 @@
-const { getProfile, updateProfile } = require('./profile.service')
+const { getProfile, getCustomerProfiles, updateProfile } = require('./profile.service')
+
+async function getAllCustomerProfiles(req, res) {
+  try {
+    res.status(200).json(await getCustomerProfiles())
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
 
 async function getMyProfile(req, res) {
   try {
@@ -24,4 +32,4 @@ async function updateMyProfile(req, res) {
   }
 }
 
-module.exports = { getMyProfile, updateMyProfile }
+module.exports = { getAllCustomerProfiles, getMyProfile, updateMyProfile }
