@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import {
   getProducts,
   createProduct,
@@ -12,7 +12,7 @@ export function useProducts() {
   const [error, setError] = useState(null)
 
   // Fetch all products
-  async function fetchProducts() {
+  const fetchProducts = useCallback(async function fetchProducts() {
     setLoading(true)
     setError(null)
 
@@ -27,15 +27,15 @@ export function useProducts() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   // Add a product
-  async function addProduct(product) {
+  const addProduct = useCallback(async function addProduct(product, imageFile) {
     setLoading(true)
     setError(null)
 
     try {
-      const data = await createProduct(product)
+      const data = await createProduct(product, imageFile)
       setProducts((previousProducts) => [...previousProducts, data])
       return data
     } catch (error) {
@@ -45,17 +45,17 @@ export function useProducts() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   // Edit a product
-  async function editProduct(id, product) {
+  const editProduct = useCallback(async function editProduct(id, product, imageFile) {
     setLoading(true)
     setError(null)
 
     try {
-      const data = await updateProduct(id, product)
+      const data = await updateProduct(id, product, imageFile)
       setProducts((previousProducts) =>
-        previousProducts.map((item) => (item.id === id ? data : item))
+        previousProducts.map((item) => (String(item.id) === String(id) ? data : item))
       )
       return data
     } catch (error) {
@@ -65,17 +65,17 @@ export function useProducts() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   // Remove a product
-  async function removeProduct(id) {
+  const removeProduct = useCallback(async function removeProduct(id) {
     setLoading(true)
     setError(null)
 
     try {
       const data = await deleteProduct(id)
       setProducts((previousProducts) =>
-        previousProducts.filter((item) => item.id !== id)
+        previousProducts.filter((item) => String(item.id) !== String(id))
       )
       return data
     } catch (error) {
@@ -85,7 +85,7 @@ export function useProducts() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   return {
     products,
