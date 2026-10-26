@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import {
   getSales,
   getSalesSummary,
@@ -14,7 +14,7 @@ export function useSales() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  async function fetchSales() {
+  const fetchSales = useCallback(async function fetchSales() {
     setLoading(true)
     setError(null)
 
@@ -28,9 +28,9 @@ export function useSales() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  async function fetchSalesSummary() {
+  const fetchSalesSummary = useCallback(async function fetchSalesSummary() {
     setLoading(true)
     setError(null)
 
@@ -44,9 +44,9 @@ export function useSales() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  async function addSale(order_id) {
+  const addSale = useCallback(async function addSale(order_id) {
     setLoading(true)
     setError(null)
 
@@ -70,7 +70,7 @@ export function useSales() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   return {
     sales,
