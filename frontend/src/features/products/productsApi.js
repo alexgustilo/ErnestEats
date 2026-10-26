@@ -1,6 +1,32 @@
 const API_URL =
   import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
+function getAuthHeaders() {
+  let session
+  try {
+    session = JSON.parse(localStorage.getItem('session') || 'null')
+  } catch {
+    session = null
+  }
+
+  if (!session?.access_token) {
+    throw new Error('Please log in again to manage products.')
+  }
+
+  return { Authorization: `Bearer ${session.access_token}` }
+}
+
+function createProductFormData(product, imageFile) {
+  const formData = new FormData()
+  formData.append('name', product.name)
+  formData.append('description', product.description || '')
+  formData.append('price', String(product.price))
+  formData.append('is_available', String(Boolean(product.is_available)))
+  formData.append('category_id', product.category_id || '')
+  if (imageFile) formData.append('image', imageFile)
+  return formData
+}
+
 // Get all products
 export async function getProducts() {
   const res = await fetch(`${API_URL}/products`)
@@ -13,14 +39,12 @@ export async function getProducts() {
   return data
 }
 
-// Create a product
-export async function createProduct(product) {
+// Create a product and let the backend upload its optional image.
+export async function createProduct(product, imageFile) {
   const res = await fetch(`${API_URL}/products`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(product)
+    headers: getAuthHeaders(),
+    body: createProductFormData(product, imageFile)
   })
 
   const data = await res.json()
@@ -32,14 +56,12 @@ export async function createProduct(product) {
   return data
 }
 
-// Update a product
-export async function updateProduct(id, product) {
+// Update a product and optionally replace its image through the backend.
+export async function updateProduct(id, product, imageFile) {
   const res = await fetch(`${API_URL}/products/${id}`, {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(product)
+    headers: getAuthHeaders(),
+    body: createProductFormData(product, imageFile)
   })
 
   const data = await res.json()
@@ -54,7 +76,8 @@ export async function updateProduct(id, product) {
 // Delete a product
 export async function deleteProduct(id) {
   const res = await fetch(`${API_URL}/products/${id}`, {
-    method: 'DELETE'
+    method: 'DELETE',
+    headers: getAuthHeaders()
   })
 
   const data = await res.json()
