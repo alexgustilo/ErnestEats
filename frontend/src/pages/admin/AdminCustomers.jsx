@@ -45,6 +45,19 @@ function AdminCustomers() {
 
   const customers = useMemo(() => {
     const groups = new Map()
+
+    // Include every registered customer, even if they have not ordered yet.
+    for (const profile of profiles) {
+      if (profile.id) {
+        groups.set(String(profile.id), {
+          id: String(profile.id),
+          orderCount: 0,
+          total: 0,
+          latestOrder: null
+        })
+      }
+    }
+
     for (const order of orders) {
       if (!order.customer_id) continue
       const id = String(order.customer_id)
@@ -70,7 +83,7 @@ function AdminCustomers() {
       .filter((customer) => [customer.full_name, customer.contact_number, customer.id]
         .some((value) => String(value || '').toLowerCase().includes(query.trim().toLowerCase())))
       .sort((a, b) => b.orderCount - a.orderCount)
-  }, [orders, sales, profilesById, query])
+  }, [orders, sales, profiles, profilesById, query])
 
   const totalSpent = sales.reduce((sum, sale) => sum + (Number(sale.total_amount) || 0), 0)
   const loadingPage = loading || salesLoading || profilesLoading
