@@ -29,6 +29,7 @@ function App() {
         />
 
         <Route path="/" element={<Navigate to="/auth" replace />} />
+        <Route path="*" element={<Navigate to="/auth" replace />} />
       </Routes>
     </BrowserRouter>
   )
