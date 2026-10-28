@@ -9,11 +9,11 @@ function CustomerNavbar({ cartCount = 0, cartTotal = 0, unreadCount = 0, profile
   ]
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[#E8D8BE] bg-white text-[#29241E]">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-8 gap-y-3 px-5 py-4 sm:px-8">
+    <header className="customer-header sticky top-0 z-40 border-b border-[#E8D8BE] bg-white text-[#29241E]">
+      <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-x-8 gap-y-3 px-5 py-4 sm:px-8 lg:px-12">
         <Link to="/customer" className="flex items-center gap-3" aria-label="Ernest Kitchen home">
           <img src="/logo/logo1.png" alt="" className="h-10 w-10 rounded-full object-contain" />
-          <span className="font-extrabold">Ernest Kitchen &amp; Streetfood</span>
+          <span className="font-semibold tracking-tight">Ernest Kitchen <span className="font-normal text-[#8A8177]">&amp; Streetfood</span></span>
         </Link>
         <nav aria-label="Customer navigation" className="order-3 flex w-full items-center justify-center gap-5 sm:order-2 sm:w-auto sm:gap-8">
           {navItems.map((item) => (
