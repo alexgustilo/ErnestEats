@@ -11,15 +11,10 @@ function CustomerNotifications() {
   }, [])
   useEffect(() => {
     Promise.resolve().then(load)
-    const refreshWhenVisible = () => {
-      if (document.visibilityState === 'visible') load()
-    }
-    const timer = window.setInterval(refreshWhenVisible, 30000)
-    document.addEventListener('visibilitychange', refreshWhenVisible)
+    window.addEventListener('ernesteats-notifications-updated', load)
 
     return () => {
-      window.clearInterval(timer)
-      document.removeEventListener('visibilitychange', refreshWhenVisible)
+      window.removeEventListener('ernesteats-notifications-updated', load)
     }
   }, [load])
   async function markRead(id) {
