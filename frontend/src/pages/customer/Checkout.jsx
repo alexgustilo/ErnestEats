@@ -9,7 +9,7 @@ function peso(value) {
 
 function getSavedProfile() {
   try {
-    return JSON.parse(localStorage.getItem('profile') || 'null') || {}
+    return JSON.parse(sessionStorage.getItem('profile') || 'null') || {}
   } catch {
     return {}
   }
