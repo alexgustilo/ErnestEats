@@ -1,7 +1,8 @@
 const {
   getNotifications: getNotificationsService,
   createNotification: createNotificationService,
-  markNotificationAsRead: markNotificationAsReadService
+  markNotificationAsRead: markNotificationAsReadService,
+  addNotificationListener
 } = require('./notifications.service')
 
 // Get notifications for the signed-in customer
@@ -12,6 +13,28 @@ async function getMyNotifications(req, res) {
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
+}
+
+// Stream new notifications to only the authenticated customer's browser.
+function streamMyNotifications(req, res) {
+  res.set({
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache, no-transform',
+    Connection: 'keep-alive',
+    'X-Accel-Buffering': 'no'
+  })
+  res.flushHeaders?.()
+  res.write('event: connected\ndata: {}\n\n')
+
+  const removeListener = addNotificationListener(req.user.id, (notification) => {
+    res.write(`event: notification\ndata: ${JSON.stringify(notification)}\n\n`)
+  })
+  const heartbeat = setInterval(() => res.write(': keep-alive\n\n'), 25_000)
+
+  res.on('close', () => {
+    clearInterval(heartbeat)
+    removeListener()
+  })
 }
 
 // Create a notification
@@ -45,6 +68,7 @@ async function markNotificationAsRead(req, res) {
 
 module.exports = {
   getMyNotifications,
+  streamMyNotifications,
   createNotification,
   markNotificationAsRead
 }
