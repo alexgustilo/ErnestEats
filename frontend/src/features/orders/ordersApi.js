@@ -6,7 +6,7 @@ function getAuthHeaders(extraHeaders = {}) {
   let session
 
   try {
-    session = JSON.parse(localStorage.getItem('session') || 'null')
+    session = JSON.parse(sessionStorage.getItem('session') || 'null')
   } catch {
     session = null
   }
