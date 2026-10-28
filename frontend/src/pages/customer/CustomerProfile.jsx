@@ -14,9 +14,9 @@ function CustomerProfile() {
       const profile = await getMyProfile()
       setForm({ full_name: profile.full_name || '', contact_number: profile.contact_number || '' })
       let savedUser = null
-      try { savedUser = JSON.parse(localStorage.getItem('user') || 'null') } catch { /* ignore invalid user cache */ }
+      try { savedUser = JSON.parse(sessionStorage.getItem('user') || 'null') } catch { /* ignore invalid user cache */ }
       setEmail(profile.email || savedUser?.email || '')
-      localStorage.setItem('profile', JSON.stringify(profile))
+      sessionStorage.setItem('profile', JSON.stringify(profile))
       window.dispatchEvent(new Event('ernesteats-profile-updated'))
     } catch (err) {
       setError(err.message || 'Failed to load your profile.')
@@ -39,7 +39,7 @@ function CustomerProfile() {
     try {
       const profile = await updateMyProfile(form)
       setForm({ full_name: profile.full_name || '', contact_number: profile.contact_number || '' })
-      localStorage.setItem('profile', JSON.stringify(profile))
+      sessionStorage.setItem('profile', JSON.stringify(profile))
       window.dispatchEvent(new Event('ernesteats-profile-updated'))
       setSuccess('Your profile has been saved.')
     } catch (err) { setError(err.message) } finally { setSaving(false) }
