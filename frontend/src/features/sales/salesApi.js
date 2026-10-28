@@ -1,9 +1,24 @@
 const API_URL =
   import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
+function getAuthHeaders(extraHeaders = {}) {
+  let session
+  try {
+    session = JSON.parse(sessionStorage.getItem('session') || 'null')
+  } catch {
+    session = null
+  }
+
+  if (!session?.access_token) {
+    throw new Error('Please log in again to access sales reports.')
+  }
+
+  return { ...extraHeaders, Authorization: `Bearer ${session.access_token}` }
+}
+
 // Get all sales
 export async function getSales() {
-  const res = await fetch(`${API_URL}/sales`)
+  const res = await fetch(`${API_URL}/sales`, { headers: getAuthHeaders() })
   const data = await res.json()
 
   if (!res.ok) {
@@ -15,7 +30,7 @@ export async function getSales() {
 
 // Get sales summary
 export async function getSalesSummary() {
-  const res = await fetch(`${API_URL}/sales/summary`)
+  const res = await fetch(`${API_URL}/sales/summary`, { headers: getAuthHeaders() })
   const data = await res.json()
 
   if (!res.ok) {
@@ -29,9 +44,9 @@ export async function getSalesSummary() {
 export async function createSale(order_id) {
   const res = await fetch(`${API_URL}/sales`, {
     method: 'POST',
-    headers: {
+    headers: getAuthHeaders({
       'Content-Type': 'application/json'
-    },
+    }),
     body: JSON.stringify({ order_id })
   })
 
