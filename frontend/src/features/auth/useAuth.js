@@ -1,21 +1,54 @@
 import { useState } from 'react'
 import { registerRequest, loginRequest } from './authApi'
 
-function readStoredJson(key) {
-  const savedValue = localStorage.getItem(key)
-  if (!savedValue) return null
-
+function readStoredAuth() {
   try {
-    return JSON.parse(savedValue)
+    const user = JSON.parse(sessionStorage.getItem('user') || 'null')
+    const profile = JSON.parse(sessionStorage.getItem('profile') || 'null')
+    const session = JSON.parse(sessionStorage.getItem('session') || 'null')
+
+    // These values must all belong to the same signed-in account. Otherwise
+    // the UI can show a cached admin page while the API receives another
+    // account's token and rejects its requests.
+    const ids = [user?.id, profile?.id, session?.user?.id]
+    if (ids.some((id) => !id) || !ids.every((id) => id === ids[0])) {
+      clearStoredAuth()
+      return { user: null, profile: null }
+    }
+
+    return { user, profile }
   } catch {
-    localStorage.removeItem(key)
-    return null
+    clearStoredAuth()
+    return { user: null, profile: null }
   }
 }
 
+function clearStoredAuth() {
+  sessionStorage.removeItem('user')
+  sessionStorage.removeItem('profile')
+  sessionStorage.removeItem('session')
+}
+
+function storeLogin(data) {
+  const userId = data.user?.id
+
+  if (!userId || data.profile?.id !== userId || data.session?.user?.id !== userId) {
+    clearStoredAuth()
+    throw new Error('Login returned mismatched account details. Please sign in again.')
+  }
+
+  // Replace the complete auth set together so older values cannot survive a
+  // partial login response and be paired with the new token after refresh.
+  clearStoredAuth()
+  sessionStorage.setItem('user', JSON.stringify(data.user))
+  sessionStorage.setItem('profile', JSON.stringify(data.profile))
+  sessionStorage.setItem('session', JSON.stringify(data.session))
+}
+
 export function useAuth() {
-  const [user, setUser] = useState(() => readStoredJson('user'))
-  const [profile, setProfile] = useState(() => readStoredJson('profile'))
+  const [storedAuth] = useState(readStoredAuth)
+  const [user, setUser] = useState(storedAuth.user)
+  const [profile, setProfile] = useState(storedAuth.profile)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
@@ -28,16 +61,16 @@ export function useAuth() {
 
       if (data.user) {
         setUser(data.user)
-        localStorage.setItem('user', JSON.stringify(data.user))
+        sessionStorage.setItem('user', JSON.stringify(data.user))
       }
 
       if (data.profile) {
         setProfile(data.profile)
-        localStorage.setItem('profile', JSON.stringify(data.profile))
+        sessionStorage.setItem('profile', JSON.stringify(data.profile))
       }
 
       if (data.session) {
-        localStorage.setItem('session', JSON.stringify(data.session))
+        sessionStorage.setItem('session', JSON.stringify(data.session))
       }
 
       return data
@@ -55,20 +88,9 @@ export function useAuth() {
 
     try {
       const data = await loginRequest(formData)
-
-      if (data.user) {
-        setUser(data.user)
-        localStorage.setItem('user', JSON.stringify(data.user))
-      }
-
-      if (data.profile) {
-        setProfile(data.profile)
-        localStorage.setItem('profile', JSON.stringify(data.profile))
-      }
-
-      if (data.session) {
-        localStorage.setItem('session', JSON.stringify(data.session))
-      }
+      storeLogin(data)
+      setUser(data.user)
+      setProfile(data.profile)
 
       return data
     } catch (err) {
@@ -82,9 +104,7 @@ export function useAuth() {
   function logout() {
     setError(null)
 
-    localStorage.removeItem('user')
-    localStorage.removeItem('profile')
-    localStorage.removeItem('session')
+    clearStoredAuth()
 
     setUser(null)
     setProfile(null)
