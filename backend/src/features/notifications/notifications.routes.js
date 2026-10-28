@@ -6,11 +6,13 @@ const requireAdmin = require('../../middleware/role.middleware')
 
 const {
   getMyNotifications,
+  streamMyNotifications,
   createNotification,
   markNotificationAsRead
 } = require('./notifications.controller')
 
 router.get('/mine', requireAuth, getMyNotifications)
+router.get('/stream', requireAuth, streamMyNotifications)
 router.post('/', requireAuth, requireAdmin, createNotification)
 router.patch('/:id/read', requireAuth, markNotificationAsRead)
 
