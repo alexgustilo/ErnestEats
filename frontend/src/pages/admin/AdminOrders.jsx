@@ -27,7 +27,7 @@ function getNextAction(order) {
 }
 
 function AdminOrders() {
-  const { orders, fetchOrders, editOrder, loading: ordersLoading, error: ordersError } = useOrders()
+  const { orders, fetchOrders, editOrder, cancelOrder, loading: ordersLoading, error: ordersError } = useOrders()
   const { products, fetchProducts, loading: productsLoading, error: productsError } = useProducts()
   const [updatingOrderId, setUpdatingOrderId] = useState(null)
   const [query, setQuery] = useState('')
@@ -35,6 +35,7 @@ function AdminOrders() {
   const [profiles, setProfiles] = useState([])
   const [profilesLoading, setProfilesLoading] = useState(true)
   const [profilesError, setProfilesError] = useState(null)
+  const [actionNotice, setActionNotice] = useState('')
 
   const requestProfiles = useCallback(() => getCustomerProfiles(), [])
 
@@ -79,8 +80,24 @@ function AdminOrders() {
 
   async function handleStatusUpdate(order, updates) {
     setUpdatingOrderId(order.id)
+    setActionNotice('')
     try {
-      await editOrder(order.id, updates)
+      const result = await editOrder(order.id, updates)
+      setActionNotice(result.warning || 'Order updated successfully.')
+    } catch {
+      // The hook stores the API error for the page alert.
+    } finally {
+      setUpdatingOrderId(null)
+    }
+  }
+
+  async function handleCancelOrder(order) {
+    if (!window.confirm(`Cancel order #${String(order.id).slice(0, 8)}? Its reserved stock will be returned.`)) return
+    setUpdatingOrderId(order.id)
+    setActionNotice('')
+    try {
+      const result = await cancelOrder(order.id)
+      setActionNotice(result.warning || 'Order cancelled and stock returned.')
     } catch {
       // The hook stores the API error for the page alert.
     } finally {
@@ -99,6 +116,7 @@ function AdminOrders() {
       </header>
 
       {pageError && <div role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{pageError}</div>}
+      {actionNotice && <div role="status" className="mb-5 rounded-xl border border-[#D6E8DC] bg-[#F0F8F2] px-4 py-3 text-sm text-[#315D4D]">{actionNotice}</div>}
 
       <div className="mb-4 flex flex-wrap gap-3">
         <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search order, customer, or item" aria-label="Search orders" className="w-full max-w-sm rounded-xl border border-[#E6DCCF] bg-white px-4 py-2.5 text-sm outline-none focus:border-[#E8531D]" />
@@ -129,7 +147,7 @@ function AdminOrders() {
                     <td className="px-4 py-4">{formatPeso(order.total_amount)}</td>
                     <td className="px-4 py-4 capitalize">{order.payment_status || 'Unpaid'}</td>
                     <td className="px-4 py-4"><span className={`rounded-full px-3 py-1 text-xs font-bold capitalize ${getStatusClass(order.status)}`}>{order.status || 'Unknown'}</span></td>
-                    <td className="px-4 py-4">{nextAction && <button type="button" disabled={pageLoading || updatingOrderId === order.id} onClick={() => handleStatusUpdate(order, nextAction.updates)} className="whitespace-nowrap rounded-lg bg-[#2B211A] px-4 py-2 text-xs font-bold text-white hover:bg-[#44362B] disabled:cursor-not-allowed disabled:opacity-50">{updatingOrderId === order.id ? 'Updating…' : nextAction.label}</button>}</td>
+                    <td className="px-4 py-4"><div className="flex flex-wrap gap-2">{nextAction && <button type="button" disabled={pageLoading || updatingOrderId === order.id} onClick={() => handleStatusUpdate(order, nextAction.updates)} className="whitespace-nowrap rounded-lg bg-[#2B211A] px-4 py-2 text-xs font-bold text-white hover:bg-[#44362B] disabled:cursor-not-allowed disabled:opacity-50">{updatingOrderId === order.id ? 'Updating…' : nextAction.label}</button>}{!['completed', 'cancelled'].includes(String(order.status || '').toLowerCase()) && <button type="button" disabled={pageLoading || updatingOrderId === order.id} onClick={() => handleCancelOrder(order)} className="whitespace-nowrap rounded-lg border border-red-300 px-3 py-2 text-xs font-bold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50">Cancel</button>}</div></td>
                   </tr>
                 )
               })}
