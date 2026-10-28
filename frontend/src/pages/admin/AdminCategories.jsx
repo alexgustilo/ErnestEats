@@ -72,7 +72,7 @@ function AdminCategories() {
     ).length
     const confirmed = window.confirm(
       productCount > 0
-        ? `Delete "${category.name}" and its ${productCount} product${productCount === 1 ? '' : 's'}? Products that are part of existing orders cannot be deleted.`
+        ? `Delete "${category.name}"? Its ${productCount} product${productCount === 1 ? ' will' : 's will'} remain available as uncategorized.`
         : `Delete the "${category.name}" category?`
     )
 
