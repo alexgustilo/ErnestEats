@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useOrders } from '../../features/orders/useOrders'
 import { useSales } from '../../features/sales/useSales'
 import { useInventory } from '../../features/inventory/useInventory'
+import { getCustomerProfiles } from '../../features/profile/profileApi'
 import { useNavigate } from 'react-router-dom'
 
 function isToday(value) {
@@ -67,6 +68,23 @@ function AdminOverview() {
   } = useInventory()
 
   const [loadError, setLoadError] = useState(null)
+  const [profiles, setProfiles] = useState([])
+
+  const fetchProfiles = useCallback(async () => {
+    try {
+      const data = await getCustomerProfiles()
+      setProfiles(data)
+      return data
+    } catch (profileError) {
+      setLoadError(profileError.message)
+      throw profileError
+    }
+  }, [])
+
+  const profilesById = useMemo(
+    () => new Map(profiles.map((profile) => [String(profile.id), profile])),
+    [profiles]
+  )
 
   useEffect(() => {
     let isMounted = true
@@ -75,12 +93,13 @@ function AdminOverview() {
       const results = await Promise.allSettled([
         fetchOrders(),
         fetchSales(),
-        fetchInventory()
+        fetchInventory(),
+        fetchProfiles()
       ])
 
-      const errors = results
+      const errors = [...new Set(results
         .filter((result) => result.status === 'rejected')
-        .map((result) => result.reason?.message || 'Could not load dashboard data')
+        .map((result) => result.reason?.message || 'Could not load dashboard data'))]
 
       if (isMounted && errors.length > 0) {
         setLoadError(errors.join('. '))
@@ -92,7 +111,7 @@ function AdminOverview() {
     return () => {
       isMounted = false
     }
-  }, [fetchInventory, fetchOrders, fetchSales])
+  }, [fetchInventory, fetchOrders, fetchProfiles, fetchSales])
 
   const ordersToday = orders.filter((order) => isToday(order.created_at))
 
@@ -124,7 +143,7 @@ function AdminOverview() {
 
   async function refreshOverview() {
     setLoadError(null)
-    await Promise.allSettled([fetchOrders(), fetchSales(), fetchInventory()])
+    await Promise.allSettled([fetchOrders(), fetchSales(), fetchInventory(), fetchProfiles()])
   }
 
   return (
@@ -205,9 +224,10 @@ function AdminOverview() {
                       #{String(order.id).slice(0, 8)}
                     </td>
                     <td className="px-4 py-4">
-                      {order.customer_id
-                        ? `Customer ${String(order.customer_id).slice(0, 6)}`
-                        : '—'}
+                      {profilesById.get(String(order.customer_id))?.full_name ||
+                        (order.customer_id
+                          ? `Customer ${String(order.customer_id).slice(0, 6)}`
+                          : '—')}
                     </td>
                     <td className="px-4 py-4">
                       {itemCount} {itemCount === 1 ? 'item' : 'items'}
