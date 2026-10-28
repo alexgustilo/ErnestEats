@@ -46,51 +46,15 @@ async function updateCategory(id, name) {
 
 // Delete a category and leave its products uncategorized
 async function deleteCategory(id) {
-  const { data: products, error: productsError } = await supabase
+  // Keep products and inventory intact; removing a category only clears the
+  // category association so the products remain available as uncategorized.
+  const { error: productsError } = await supabase
     .from('products')
-    .select('id')
+    .update({ category_id: null })
     .eq('category_id', id)
 
   if (productsError) {
     throw productsError
-  }
-
-  const productIds = products.map((product) => product.id)
-
-  if (productIds.length > 0) {
-    const { data: orderItems, error: orderItemsError } = await supabase
-      .from('order_items')
-      .select('product_id')
-      .in('product_id', productIds)
-      .limit(1)
-
-    if (orderItemsError) {
-      throw orderItemsError
-    }
-
-    if (orderItems.length > 0) {
-      throw new Error(
-        'Cannot delete this category because one or more products are used in existing orders.'
-      )
-    }
-
-    const { error: inventoryError } = await supabase
-      .from('inventory')
-      .delete()
-      .in('product_id', productIds)
-
-    if (inventoryError) {
-      throw inventoryError
-    }
-
-    const { error: deleteProductsError } = await supabase
-      .from('products')
-      .delete()
-      .in('id', productIds)
-
-    if (deleteProductsError) {
-      throw deleteProductsError
-    }
   }
 
   const { data, error } = await supabase
