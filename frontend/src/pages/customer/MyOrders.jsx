@@ -89,15 +89,10 @@ function MyOrders() {
 
   useEffect(() => {
     Promise.resolve().then(loadOrders)
-    const refreshWhenVisible = () => {
-      if (document.visibilityState === 'visible') loadOrders()
-    }
-    const timer = window.setInterval(refreshWhenVisible, 30000)
-    document.addEventListener('visibilitychange', refreshWhenVisible)
+    window.addEventListener('ernesteats-order-updated', loadOrders)
 
     return () => {
-      window.clearInterval(timer)
-      document.removeEventListener('visibilitychange', refreshWhenVisible)
+      window.removeEventListener('ernesteats-order-updated', loadOrders)
     }
   }, [loadOrders])
 
