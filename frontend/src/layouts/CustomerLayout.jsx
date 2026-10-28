@@ -4,10 +4,10 @@ import CustomerNavbar from '../components/customer/CustomerNavbar'
 import CustomerFooter from '../components/customer/CustomerFooter'
 import { useAuth } from '../features/auth/useAuth'
 import { useCart } from '../features/cart/useCart'
-import { getMyNotifications } from '../features/notifications/notificationsApi'
+import { getMyNotifications, streamMyNotifications } from '../features/notifications/notificationsApi'
 
 function readProfile() {
-  try { return JSON.parse(localStorage.getItem('profile') || 'null') } catch { return null }
+  try { return JSON.parse(sessionStorage.getItem('profile') || 'null') } catch { return null }
 }
 
 function CustomerLayout() {
@@ -25,15 +25,31 @@ function CustomerLayout() {
       }).catch(() => {})
     }
     const refreshProfile = () => setProfile(readProfile())
+    let controller
+    let retryTimer
     refreshNotifications()
-    const timer = window.setInterval(() => {
-      if (document.visibilityState === 'visible') refreshNotifications()
-    }, 30000)
+    const connectToLiveNotifications = async () => {
+      controller = new AbortController()
+      try {
+        await streamMyNotifications(() => {
+          if (!active) return
+          window.dispatchEvent(new Event('ernesteats-notifications-updated'))
+          window.dispatchEvent(new Event('ernesteats-order-updated'))
+        }, controller.signal)
+      } catch (error) {
+        if (active && error.name !== 'AbortError') {
+          console.error('Live notifications disconnected:', error.message)
+        }
+      }
+      if (active) retryTimer = window.setTimeout(connectToLiveNotifications, 3000)
+    }
+    connectToLiveNotifications()
     window.addEventListener('ernesteats-notifications-updated', refreshNotifications)
     window.addEventListener('ernesteats-profile-updated', refreshProfile)
     return () => {
       active = false
-      window.clearInterval(timer)
+      controller?.abort()
+      window.clearTimeout(retryTimer)
       window.removeEventListener('ernesteats-notifications-updated', refreshNotifications)
       window.removeEventListener('ernesteats-profile-updated', refreshProfile)
     }
@@ -45,7 +61,7 @@ function CustomerLayout() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#FBF8F2] text-[#241A12]">
+    <div className="customer-shell flex min-h-screen flex-col bg-[#FBF8F2] text-[#241A12]">
       <CustomerNavbar cartCount={count} cartTotal={total} unreadCount={unreadCount} profile={profile} onLogout={handleLogout} />
       <div className="flex-1"><Outlet /></div>
       <CustomerFooter />
