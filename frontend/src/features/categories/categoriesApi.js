@@ -1,6 +1,21 @@
 const API_URL =
   import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
+function getAuthHeaders(extraHeaders = {}) {
+  let session
+  try {
+    session = JSON.parse(sessionStorage.getItem('session') || 'null')
+  } catch {
+    session = null
+  }
+
+  if (!session?.access_token) {
+    throw new Error('Please log in again to manage categories.')
+  }
+
+  return { ...extraHeaders, Authorization: `Bearer ${session.access_token}` }
+}
+
 // Get all categories
 export async function getCategories() {
   const res = await fetch(`${API_URL}/categories`)
@@ -17,9 +32,9 @@ export async function getCategories() {
 export async function createCategory(category) {
   const res = await fetch(`${API_URL}/categories`, {
     method: 'POST',
-    headers: {
+    headers: getAuthHeaders({
       'Content-Type': 'application/json'
-    },
+    }),
     body: JSON.stringify(category)
   })
 
@@ -36,9 +51,9 @@ export async function createCategory(category) {
 export async function updateCategory(id, category) {
   const res = await fetch(`${API_URL}/categories/${id}`, {
     method: 'PUT',
-    headers: {
+    headers: getAuthHeaders({
       'Content-Type': 'application/json'
-    },
+    }),
     body: JSON.stringify(category)
   })
 
@@ -54,7 +69,8 @@ export async function updateCategory(id, category) {
 // Delete a category
 export async function deleteCategory(id) {
   const res = await fetch(`${API_URL}/categories/${id}`, {
-    method: 'DELETE'
+    method: 'DELETE',
+    headers: getAuthHeaders()
   })
 
   const data = await res.json()
