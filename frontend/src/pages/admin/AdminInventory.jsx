@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useInventory } from '../../features/inventory/useInventory'
 import { useProducts } from '../../features/products/useProducts'
+import { useCategories } from '../../features/categories/useCategories'
+import AdminPagination from '../../components/admin/AdminPagination'
 
 const emptyForm = {
   product_id: '',
@@ -46,15 +48,25 @@ function AdminInventory() {
     error: productsError
   } = useProducts()
 
+  const {
+    categories,
+    fetchCategories,
+    loading: categoriesLoading,
+    error: categoriesError
+  } = useCategories()
+
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [query, setQuery] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('all')
+  const [page, setPage] = useState(1)
 
   useEffect(() => {
     fetchInventory().catch(() => {})
     fetchProducts().catch(() => {})
-  }, [fetchInventory, fetchProducts])
+    fetchCategories().catch(() => {})
+  }, [fetchInventory, fetchProducts, fetchCategories])
 
   function openAddForm() {
     setEditingId(null)
@@ -109,12 +121,17 @@ function AdminInventory() {
   }
 
   const getProductName = useCallback((productId) => {
-    const product = products.find((item) => item.id === productId)
+    const product = products.find((item) => String(item.id) === String(productId))
     return product?.name || `Product ${String(productId).slice(0, 6)}`
   }, [products])
 
-  const loading = inventoryLoading || productsLoading
-  const error = inventoryError || productsError
+  const getProductCategory = useCallback((productId) => {
+    const product = products.find((item) => String(item.id) === String(productId))
+    return categories.find((category) => String(category.id) === String(product?.category_id))?.name || 'Uncategorized'
+  }, [products, categories])
+
+  const loading = inventoryLoading || productsLoading || categoriesLoading
+  const error = inventoryError || productsError || categoriesError
   const maxStock = Math.max(
     1,
     ...inventory.map((item) => Number(item.stock_quantity) || 0)
@@ -125,8 +142,17 @@ function AdminInventory() {
     (product) => !trackedProductIds.some((id) => String(id) === String(product.id))
   )
   const visibleInventory = useMemo(() => inventory.filter((item) =>
-    getProductName(item.product_id).toLowerCase().includes(query.trim().toLowerCase())
-  ), [inventory, getProductName, query])
+    `${getProductName(item.product_id)} ${getProductCategory(item.product_id)}`.toLowerCase().includes(query.trim().toLowerCase()) &&
+    (categoryFilter === 'all' || getProductCategory(item.product_id) === categoryFilter)
+  ), [inventory, getProductName, getProductCategory, query, categoryFilter])
+  const pageSize = 10
+  const pageCount = Math.max(1, Math.ceil(visibleInventory.length / pageSize))
+  const pageInventory = visibleInventory.slice((page - 1) * pageSize, page * pageSize)
+  useEffect(() => {
+    if (page > pageCount) setPage(pageCount)
+  }, [page, pageCount])
+  const selectedProduct = products.find((product) => String(product.id) === String(form.product_id))
+  const selectedProductCategory = categories.find((category) => String(category.id) === String(selectedProduct?.category_id))?.name || 'Uncategorized'
   const lowStockCount = inventory.filter((item) => Number(item.stock_quantity) <= Number(item.low_stock_threshold)).length
 
   return (
@@ -140,7 +166,6 @@ function AdminInventory() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => { fetchInventory().catch(() => {}); fetchProducts().catch(() => {}) }} disabled={loading} className="rounded-lg border border-[#D8BD8F] bg-white px-4 py-2 text-sm font-bold text-[#756957] hover:text-[#241A12] disabled:opacity-50">{loading ? 'Refreshing…' : 'Refresh'}</button>
           <button type="button" onClick={openAddForm} className="rounded-lg bg-[#2B211A] px-4 py-2 text-sm font-bold text-white hover:bg-[#44362B]">+ Update stock</button>
         </div>
       </header>
@@ -152,9 +177,18 @@ function AdminInventory() {
       )}
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search inventory" aria-label="Search inventory" className="w-full max-w-sm rounded-xl border border-[#E6DCCF] bg-white px-4 py-2.5 text-sm outline-none focus:border-[#E8531D]" />
+        <div className="flex w-full flex-wrap gap-3 sm:w-auto">
+          <input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1) }} placeholder="Search product or category" aria-label="Search inventory" className="w-full max-w-sm rounded-xl border border-[#E6DCCF] bg-white px-4 py-2.5 text-sm outline-none focus:border-[#E8531D]" />
+          <select value={categoryFilter} onChange={(event) => { setCategoryFilter(event.target.value); setPage(1) }} aria-label="Filter inventory by category" className="rounded-xl border border-[#E6DCCF] bg-white px-4 py-2.5 text-sm outline-none focus:border-[#E8531D]">
+            <option value="all">All categories</option>
+            {categories.map((category) => <option key={category.id} value={category.name}>{category.name}</option>)}
+            {categories.length === 0 && inventory.some((item) => getProductCategory(item.product_id) === 'Uncategorized') && <option value="Uncategorized">Uncategorized</option>}
+          </select>
+        </div>
         <span className={`rounded-full px-3 py-1 text-xs font-bold ${lowStockCount ? 'bg-[#FBEAD3] text-[#8A5A0E]' : 'bg-[#E0EEE5] text-[#315D4D]'}`}>{lowStockCount} low or out of stock</span>
       </div>
+
+      <AdminPagination total={visibleInventory.length} page={page} pageSize={pageSize} onPageChange={setPage} />
 
       <section className="overflow-hidden rounded-2xl border border-[#EAD9BC] bg-white">
         <div className="overflow-x-auto">
@@ -162,6 +196,7 @@ function AdminInventory() {
             <thead className="bg-[#F2ECDD] text-[#927859]">
               <tr>
                 <th className="px-4 py-4 font-medium">Product</th>
+                <th className="px-4 py-4 font-medium">Category</th>
                 <th className="px-4 py-4 font-medium">Stock level</th>
                 <th className="px-4 py-4 font-medium">Qty left</th>
                 <th className="px-4 py-4 font-medium">Status</th>
@@ -170,7 +205,7 @@ function AdminInventory() {
             </thead>
 
             <tbody>
-              {visibleInventory.map((item) => {
+              {pageInventory.map((item) => {
                 const stock = Number(item.stock_quantity) || 0
                 const threshold = Number(item.low_stock_threshold) || 0
                 const status = getStockStatus(stock, threshold)
@@ -180,6 +215,12 @@ function AdminInventory() {
                   <tr key={item.id} className="border-t border-[#EAD8B9]">
                     <td className="px-4 py-4">
                       {getProductName(item.product_id)}
+                    </td>
+
+                    <td className="px-4 py-4">
+                      <span className="inline-flex rounded-full border border-[#E8D8BE] bg-[#FAF6EE] px-3 py-1 text-xs font-semibold text-[#765B3C]">
+                        {getProductCategory(item.product_id)}
+                      </span>
                     </td>
 
                     <td className="px-4 py-4">
@@ -226,7 +267,7 @@ function AdminInventory() {
               {!loading && visibleInventory.length === 0 && (
                 <tr>
                   <td
-                    colSpan="5"
+                    colSpan="6"
                     className="px-4 py-8 text-center text-[#9A8061]"
                   >
                     {inventory.length === 0 ? 'No inventory records found.' : 'No inventory items match this search.'}
@@ -281,6 +322,17 @@ function AdminInventory() {
                     ))}
                 </select>
               </label>
+
+              <section aria-live="polite" className="rounded-xl border border-[#EAD9BC] border-l-4 border-l-[#E8531D] bg-[#FAF6EE] p-4">
+                <p className="text-[10px] font-bold uppercase tracking-[.16em] text-[#9A8061]">Selected menu item</p>
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+                  <p className="font-bold text-[#2B211A]">{selectedProduct?.name || 'Choose a product above'}</p>
+                  <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#765B3C] ring-1 ring-[#E8D8BE]">
+                    {selectedProduct ? selectedProductCategory : 'Category'}
+                  </span>
+                </div>
+                <p className="mt-2 text-xs text-[#9A8061]">The category follows the selected product.</p>
+              </section>
 
               <label className="block text-sm font-semibold">
                 Stock quantity
