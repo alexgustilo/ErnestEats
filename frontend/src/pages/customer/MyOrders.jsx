@@ -102,14 +102,6 @@ function MyOrders() {
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div><p className="text-[10px] font-bold uppercase tracking-[.22em] text-[#B23F14]">Your kitchen updates</p><h1 className="mt-2 text-3xl font-black tracking-tight">My orders</h1><p className="mt-2 text-sm text-[#817565]">See what’s cooking and when it’s ready for pickup.</p></div>
 
-          <button
-            type="button"
-            onClick={loadOrders}
-            disabled={loading}
-            className="rounded-lg border border-[#EAD9BC] px-4 py-2 text-sm font-bold hover:bg-[#FBF1DE] disabled:opacity-50"
-          >
-            {loading ? 'Refreshing…' : 'Refresh'}
-          </button>
         </div>
 
         {error && (
