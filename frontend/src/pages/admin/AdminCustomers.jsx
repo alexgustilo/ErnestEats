@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useOrders } from '../../features/orders/useOrders'
 import { useSales } from '../../features/sales/useSales'
 import { getCustomerProfiles } from '../../features/profile/profileApi'
+import AdminPagination from '../../components/admin/AdminPagination'
 
 function peso(value) {
   return `₱${(Number(value) || 0).toLocaleString('en-PH', { maximumFractionDigits: 2 })}`
@@ -11,23 +12,12 @@ function AdminCustomers() {
   const { orders, fetchOrders, loading, error } = useOrders()
   const { sales, fetchSales, loading: salesLoading, error: salesError } = useSales()
   const [query, setQuery] = useState('')
+  const [page, setPage] = useState(1)
   const [profiles, setProfiles] = useState([])
   const [profilesLoading, setProfilesLoading] = useState(true)
   const [profilesError, setProfilesError] = useState(null)
 
   const requestProfiles = useCallback(() => getCustomerProfiles(), [])
-
-  const fetchProfiles = useCallback(async function fetchProfiles() {
-    setProfilesLoading(true)
-    setProfilesError(null)
-    try {
-      setProfiles(await requestProfiles())
-    } catch (fetchError) {
-      setProfilesError(fetchError.message)
-    } finally {
-      setProfilesLoading(false)
-    }
-  }, [requestProfiles])
 
   useEffect(() => {
     fetchOrders().catch(() => {})
@@ -84,27 +74,31 @@ function AdminCustomers() {
         .some((value) => String(value || '').toLowerCase().includes(query.trim().toLowerCase())))
       .sort((a, b) => b.orderCount - a.orderCount)
   }, [orders, sales, profiles, profilesById, query])
+  const pageSize = 10
+  const pageCount = Math.max(1, Math.ceil(customers.length / pageSize))
+  const pageCustomers = customers.slice((page - 1) * pageSize, page * pageSize)
+
+  useEffect(() => {
+    if (page > pageCount) setPage(pageCount)
+  }, [page, pageCount])
 
   const totalSpent = sales.reduce((sum, sale) => sum + (Number(sale.total_amount) || 0), 0)
   const loadingPage = loading || salesLoading || profilesLoading
   const pageError = error || salesError || profilesError
 
-  async function refreshCustomers() {
-    await Promise.allSettled([fetchOrders(), fetchSales(), fetchProfiles()])
-  }
-
   return <section>
-    <header className="mb-7 flex flex-wrap items-end justify-between gap-4"><div><h1 className="text-2xl font-extrabold">Customers</h1><p className="mt-1 text-sm text-[#8A7A61]">Customer activity and paid order totals</p></div><button type="button" onClick={refreshCustomers} disabled={loadingPage} className="rounded-lg border border-[#D8BD8F] bg-white px-4 py-2 text-sm font-bold text-[#756957] hover:text-[#241A12] disabled:opacity-50">{loadingPage ? 'Refreshing…' : 'Refresh'}</button></header>
+    <header className="mb-7 flex flex-wrap items-end justify-between gap-4"><div><h1 className="text-2xl font-extrabold">Customers</h1><p className="mt-1 text-sm text-[#8A7A61]">Customer activity and paid order totals</p></div></header>
     <div className="mb-5 grid gap-4 sm:grid-cols-3">
       <article className="rounded-2xl border border-[#EAD9BC] bg-white p-5"><p className="text-sm text-[#8A7A61]">Customers with orders</p><strong className="mt-2 block text-2xl font-extrabold">{loadingPage ? '…' : new Set(orders.map((order) => order.customer_id).filter(Boolean)).size}</strong></article>
       <article className="rounded-2xl border border-[#EAD9BC] bg-white p-5"><p className="text-sm text-[#8A7A61]">Orders placed</p><strong className="mt-2 block text-2xl font-extrabold">{loadingPage ? '…' : orders.length}</strong></article>
       <article className="rounded-2xl border border-[#EAD9BC] bg-white p-5"><p className="text-sm text-[#8A7A61]">Recorded paid sales</p><strong className="mt-2 block text-2xl font-extrabold">{loadingPage ? '…' : peso(totalSpent)}</strong></article>
     </div>
     {pageError && <p role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{pageError}</p>}
-    <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><p className="max-w-2xl text-sm text-[#756957]">Customer names and contact numbers from registered profiles.</p><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search customers" aria-label="Search customers" className="w-full max-w-xs rounded-xl border border-[#E6DCCF] bg-white px-4 py-2.5 text-sm outline-none focus:border-[#E8531D]" /></div>
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><p className="max-w-2xl text-sm text-[#756957]">Customer names and contact numbers from registered profiles.</p><input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1) }} placeholder="Search customers" aria-label="Search customers" className="w-full max-w-xs rounded-xl border border-[#E6DCCF] bg-white px-4 py-2.5 text-sm outline-none focus:border-[#E8531D]" /></div>
+    <AdminPagination total={customers.length} page={page} pageSize={pageSize} onPageChange={setPage} />
     <div className="overflow-hidden rounded-2xl border border-[#EAD9BC] bg-white"><div className="overflow-x-auto">
       <table className="w-full min-w-[760px] border-collapse text-left text-sm"><thead className="bg-[#F0ECDD] text-[#8A7A61]"><tr><th className="px-4 py-4 font-semibold">Customer</th><th className="px-4 py-4 font-semibold">Contact</th><th className="px-4 py-4 font-semibold">Orders placed</th><th className="px-4 py-4 font-semibold">Total spent</th><th className="px-4 py-4 font-semibold">Latest order</th></tr></thead><tbody>
-        {customers.map((customer) => <tr key={customer.id} className="border-t border-[#EAD9BC]"><td className="px-4 py-4"><div className="flex items-center gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F3A93B] font-bold text-[#241A12]">{(customer.full_name || 'C').trim().charAt(0).toUpperCase()}</span><span className="font-medium">{customer.full_name || 'Name unavailable'}</span></div></td><td className="px-4 py-4 text-[#8A7A61]">{customer.contact_number || 'Not provided'}</td><td className="px-4 py-4">{customer.orderCount}</td><td className="px-4 py-4 font-semibold">{peso(customer.total)}</td><td className="px-4 py-4 text-[#756957]">{customer.latestOrder ? new Date(customer.latestOrder).toLocaleDateString('en-PH') : '—'}</td></tr>)}
+        {pageCustomers.map((customer) => <tr key={customer.id} className="border-t border-[#EAD9BC]"><td className="px-4 py-4"><div className="flex items-center gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F3A93B] font-bold text-[#241A12]">{(customer.full_name || 'C').trim().charAt(0).toUpperCase()}</span><span className="font-medium">{customer.full_name || 'Name unavailable'}</span></div></td><td className="px-4 py-4 text-[#8A7A61]">{customer.contact_number || 'Not provided'}</td><td className="px-4 py-4">{customer.orderCount}</td><td className="px-4 py-4 font-semibold">{peso(customer.total)}</td><td className="px-4 py-4 text-[#756957]">{customer.latestOrder ? new Date(customer.latestOrder).toLocaleDateString('en-PH') : '—'}</td></tr>)}
         {!loadingPage && customers.length === 0 && <tr><td colSpan="5" className="px-4 py-10 text-center text-[#8A7A61]">{query ? 'No customers match this search.' : 'No customer orders recorded yet.'}</td></tr>}
       </tbody></table>
     </div>{loadingPage && <p className="border-t border-[#EAD9BC] px-4 py-3 text-sm text-[#8A7A61]">Loading customers…</p>}</div>
