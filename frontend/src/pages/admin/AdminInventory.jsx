@@ -132,19 +132,35 @@ function AdminInventory() {
 
   const loading = inventoryLoading || productsLoading || categoriesLoading
   const error = inventoryError || productsError || categoriesError
+  const inventoryRows = useMemo(() => {
+    const inventoryProductIds = new Set(inventory.map((item) => String(item.product_id)))
+    return [
+      ...inventory,
+      ...products
+        .filter((product) => !inventoryProductIds.has(String(product.id)))
+        .map((product) => ({
+          id: null,
+          product_id: product.id,
+          stock_quantity: Number(product.stock_quantity) || 0,
+          low_stock_threshold: 5,
+          needsInventoryRecord: true
+        }))
+    ]
+  }, [inventory, products])
+
   const maxStock = Math.max(
     1,
-    ...inventory.map((item) => Number(item.stock_quantity) || 0)
+    ...inventoryRows.map((item) => Number(item.stock_quantity) || 0)
   )
 
   const trackedProductIds = inventory.map((item) => item.product_id)
   const availableProducts = products.filter(
     (product) => !trackedProductIds.some((id) => String(id) === String(product.id))
   )
-  const visibleInventory = useMemo(() => inventory.filter((item) =>
+  const visibleInventory = useMemo(() => inventoryRows.filter((item) =>
     `${getProductName(item.product_id)} ${getProductCategory(item.product_id)}`.toLowerCase().includes(query.trim().toLowerCase()) &&
     (categoryFilter === 'all' || getProductCategory(item.product_id) === categoryFilter)
-  ), [inventory, getProductName, getProductCategory, query, categoryFilter])
+  ), [inventoryRows, getProductName, getProductCategory, query, categoryFilter])
   const pageSize = 10
   const pageCount = Math.max(1, Math.ceil(visibleInventory.length / pageSize))
   const pageInventory = visibleInventory.slice((page - 1) * pageSize, page * pageSize)
@@ -153,7 +169,7 @@ function AdminInventory() {
   }, [page, pageCount])
   const selectedProduct = products.find((product) => String(product.id) === String(form.product_id))
   const selectedProductCategory = categories.find((category) => String(category.id) === String(selectedProduct?.category_id))?.name || 'Uncategorized'
-  const lowStockCount = inventory.filter((item) => Number(item.stock_quantity) <= Number(item.low_stock_threshold)).length
+  const lowStockCount = inventoryRows.filter((item) => Number(item.stock_quantity) <= Number(item.low_stock_threshold)).length
 
   return (
     <section>
@@ -182,7 +198,7 @@ function AdminInventory() {
           <select value={categoryFilter} onChange={(event) => { setCategoryFilter(event.target.value); setPage(1) }} aria-label="Filter inventory by category" className="rounded-xl border border-[#E6DCCF] bg-white px-4 py-2.5 text-sm outline-none focus:border-[#E8531D]">
             <option value="all">All categories</option>
             {categories.map((category) => <option key={category.id} value={category.name}>{category.name}</option>)}
-            {categories.length === 0 && inventory.some((item) => getProductCategory(item.product_id) === 'Uncategorized') && <option value="Uncategorized">Uncategorized</option>}
+            {categories.length === 0 && inventoryRows.some((item) => getProductCategory(item.product_id) === 'Uncategorized') && <option value="Uncategorized">Uncategorized</option>}
           </select>
         </div>
         <span className={`rounded-full px-3 py-1 text-xs font-bold ${lowStockCount ? 'bg-[#FBEAD3] text-[#8A5A0E]' : 'bg-[#E0EEE5] text-[#315D4D]'}`}>{lowStockCount} low or out of stock</span>
@@ -212,7 +228,7 @@ function AdminInventory() {
                 const barWidth = Math.min((stock / maxStock) * 100, 100)
 
                 return (
-                  <tr key={item.id} className="border-t border-[#EAD8B9]">
+                  <tr key={item.id || item.product_id} className="border-t border-[#EAD8B9]">
                     <td className="px-4 py-4">
                       {getProductName(item.product_id)}
                     </td>
@@ -270,7 +286,7 @@ function AdminInventory() {
                     colSpan="6"
                     className="px-4 py-8 text-center text-[#9A8061]"
                   >
-                    {inventory.length === 0 ? 'No inventory records found.' : 'No inventory items match this search.'}
+                    {products.length === 0 ? 'No products found.' : 'No inventory items match this search.'}
                   </td>
                 </tr>
               )}
@@ -286,13 +302,13 @@ function AdminInventory() {
       </section>
 
       {isFormOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-3 sm:items-center sm:p-4">
           <form
             onSubmit={handleSubmit}
-            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+            className="my-auto max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-xl sm:max-h-[calc(100dvh-2rem)] sm:p-6"
           >
             <h2 className="mb-5 text-xl font-extrabold">
-              {editingId ? 'Update stock' : 'Add inventory record'}
+              {editingId || form.product_id ? 'Update stock' : 'Add inventory record'}
             </h2>
 
             <div className="space-y-4">
