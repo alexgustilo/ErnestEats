@@ -87,9 +87,42 @@ async function updateProduct(id, product, imageFile) {
     throw findError
   }
 
+  const { stock_quantity: stockQuantity, ...productUpdates } = product
+  const { data: existingInventory, error: inventoryFindError } = await supabase
+    .from('inventory')
+    .select('id, stock_quantity, low_stock_threshold')
+    .eq('product_id', id)
+    .maybeSingle()
+
+  if (inventoryFindError) throw inventoryFindError
+
   const uploadedImage = await uploadProductImage(imageFile)
-  const updates = { ...product }
+  const updates = { ...productUpdates }
   if (uploadedImage) updates.image_url = uploadedImage.url
+
+  let savedInventory = existingInventory
+  let inventoryWasUpdated = false
+  if (stockQuantity !== undefined) {
+    const inventoryResult = existingInventory
+      ? await supabase
+        .from('inventory')
+        .update({ stock_quantity: stockQuantity })
+        .eq('id', existingInventory.id)
+        .select('id, stock_quantity, low_stock_threshold')
+        .single()
+      : await supabase
+        .from('inventory')
+        .insert({ product_id: id, stock_quantity: stockQuantity, low_stock_threshold: 5 })
+        .select('id, stock_quantity, low_stock_threshold')
+        .single()
+
+    if (inventoryResult.error) {
+      if (uploadedImage) await removeProductImage(uploadedImage.url)
+      throw inventoryResult.error
+    }
+    savedInventory = inventoryResult.data
+    inventoryWasUpdated = true
+  }
 
   const { data, error } = await supabase
     .from('products')
@@ -99,6 +132,16 @@ async function updateProduct(id, product, imageFile) {
     .single()
 
   if (error) {
+    if (inventoryWasUpdated) {
+      if (existingInventory) {
+        await supabase
+          .from('inventory')
+          .update({ stock_quantity: existingInventory.stock_quantity })
+          .eq('id', existingInventory.id)
+      } else {
+        await supabase.from('inventory').delete().eq('id', savedInventory.id)
+      }
+    }
     if (uploadedImage) await removeProductImage(uploadedImage.url)
     throw error
   }
@@ -107,7 +150,7 @@ async function updateProduct(id, product, imageFile) {
     await removeProductImage(existingProduct.image_url)
   }
 
-  return data
+  return { ...data, stock_quantity: Number(savedInventory?.stock_quantity) || 0 }
 }
 
 async function deleteProduct(id) {
@@ -132,6 +175,60 @@ async function deleteProduct(id) {
     .eq('id', id)
     .select()
     .single()
+
+  if (error?.code === '23503') {
+    // Keep the product row for historical order_items, but retire it from sale
+    // and clear its stock so the Inventory page reflects the delete action.
+    const { data: inventoryRecord, error: inventoryFindError } = await supabase
+      .from('inventory')
+      .select('id, stock_quantity, low_stock_threshold')
+      .eq('product_id', id)
+      .maybeSingle()
+
+    if (inventoryFindError) throw inventoryFindError
+
+    const { data: updatedInventory, error: inventoryUpdateError } = inventoryRecord
+      ? await supabase
+        .from('inventory')
+        .update({ stock_quantity: 0 })
+        .eq('id', inventoryRecord.id)
+        .select('id, stock_quantity')
+        .single()
+      : await supabase
+        .from('inventory')
+        .insert({ product_id: id, stock_quantity: 0, low_stock_threshold: 5 })
+        .select('id, stock_quantity')
+        .single()
+
+    if (inventoryUpdateError) throw inventoryUpdateError
+
+    const { data: unavailableProduct, error: archiveError } = await supabase
+      .from('products')
+      .update({ is_available: false })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (archiveError) {
+      // Restore the prior quantity if retiring the product did not succeed.
+      if (inventoryRecord) {
+        await supabase
+          .from('inventory')
+          .update({ stock_quantity: inventoryRecord.stock_quantity })
+          .eq('id', inventoryRecord.id)
+      } else {
+        await supabase.from('inventory').delete().eq('id', updatedInventory.id)
+      }
+      throw archiveError
+    }
+
+    return {
+      ...unavailableProduct,
+      stock_quantity: 0,
+      archived: true,
+      out_of_stock: true
+    }
+  }
 
   if (error) throw error
   await removeProductImage(existingProduct.image_url)
