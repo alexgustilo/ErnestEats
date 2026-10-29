@@ -91,12 +91,8 @@ function AdminReports() {
   const pageLoading = loading || ordersLoading || productsLoading
   const pageError = error || ordersError || productsError
 
-  async function refreshReport() {
-    await Promise.allSettled([fetchSales(), fetchOrders(), fetchProducts()])
-  }
-
   return <section>
-    <header className="mb-6 flex flex-wrap items-end justify-between gap-4"><div><h1 className="text-2xl font-extrabold">Sales / Reports</h1><p className="mt-1 text-sm text-[#8A7A61]">Recorded revenue from completed and paid orders</p></div><button type="button" onClick={refreshReport} disabled={pageLoading} className="rounded-lg border border-[#D8BD8F] bg-white px-4 py-2 text-sm font-bold text-[#756957] hover:text-[#241A12] disabled:opacity-50">{pageLoading ? 'Refreshing…' : 'Refresh'}</button></header>
+    <header className="mb-6 flex flex-wrap items-end justify-between gap-4"><div><h1 className="text-2xl font-extrabold">Sales / Reports</h1><p className="mt-1 text-sm text-[#8A7A61]">Recorded revenue from completed and paid orders</p></div></header>
     {pageError && <p role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{pageError}</p>}
     <div className="mb-5 flex flex-wrap gap-2">{['daily', 'weekly', 'monthly'].map((item) => <button key={item} type="button" aria-pressed={range === item} onClick={() => setRange(item)} className={`rounded-lg border px-4 py-2 text-sm font-bold capitalize transition ${range === item ? 'border-[#241A12] bg-[#241A12] text-white' : 'border-[#D8BD8F] bg-white text-[#8A7A61] hover:text-[#241A12]'}`}>{item}</button>)}</div>
     <div className="mb-5 grid gap-4 sm:grid-cols-3">
