@@ -46,14 +46,14 @@ function parseProductInput(body, { isCreate = false } = {}) {
   }
 
   const product = { name, description, price, is_available }
-  if (isCreate) {
+  if (isCreate || body.stock_quantity !== undefined) {
     const rawStock = body.stock_quantity
     const stockQuantity = rawStock === undefined || String(rawStock).trim() === ''
-      ? 0
+      ? (isCreate ? 0 : NaN)
       : Number(rawStock)
 
     if (!Number.isInteger(stockQuantity) || stockQuantity < 0) {
-      const error = new Error('Starting stock must be a whole number of zero or more.')
+      const error = new Error('Stock quantity must be a whole number of zero or more.')
       error.statusCode = 400
       throw error
     }
