@@ -74,8 +74,9 @@ export function useProducts() {
 
     try {
       const data = await deleteProduct(id)
-      setProducts((previousProducts) =>
-        previousProducts.filter((item) => String(item.id) !== String(id))
+      setProducts((previousProducts) => data.archived
+        ? previousProducts.map((item) => String(item.id) === String(id) ? data : item)
+        : previousProducts.filter((item) => String(item.id) !== String(id))
       )
       return data
     } catch (error) {
