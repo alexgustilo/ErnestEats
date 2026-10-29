@@ -10,6 +10,7 @@ const emptyForm = {
   name: '',
   description: '',
   price: '',
+  stock_quantity: '0',
   image_url: '',
   is_available: true,
   category_id: ''
@@ -196,7 +197,10 @@ function AdminProducts() {
       if (editingId) {
         await editProduct(editingId, productData, imageFile)
       } else {
-        await addProduct(productData, imageFile)
+        await addProduct({
+          ...productData,
+          stock_quantity: Number(form.stock_quantity)
+        }, imageFile)
       }
 
       closeForm()
@@ -377,10 +381,10 @@ function AdminProducts() {
       </section>
 
       {isFormOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/50 p-4">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-3 sm:items-center sm:p-4">
           <form
             onSubmit={handleSubmit}
-            className="my-auto w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"
+            className="my-auto max-h-[calc(100dvh-1.5rem)] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 shadow-xl sm:max-h-[calc(100dvh-2rem)] sm:p-6"
           >
             <div className="mb-5 flex items-center justify-between">
               <h2 className="text-xl font-extrabold">
@@ -433,6 +437,25 @@ function AdminProducts() {
                   className="mt-1 w-full rounded-xl border border-[#E6DCCF] px-4 py-3 outline-none focus:border-[#E8531D]"
                 />
               </label>
+
+              {!editingId && (
+                <label className="block text-sm font-semibold">
+                  Stock quantity
+                  <input
+                    name="stock_quantity"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={form.stock_quantity}
+                    onChange={handleChange}
+                    required
+                    className="mt-1 w-full rounded-xl border border-[#E6DCCF] px-4 py-3 outline-none focus:border-[#E8531D]"
+                  />
+                  <span className="mt-1 block text-xs font-normal text-[#8A7A61]">
+                    This quantity is added to Inventory when the product is created. You can update it there later.
+                  </span>
+                </label>
+              )}
 
               <label className="block text-sm font-semibold">
                 Category
