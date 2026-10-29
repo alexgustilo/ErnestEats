@@ -141,11 +141,6 @@ function AdminOverview() {
     day: 'numeric'
   })
 
-  async function refreshOverview() {
-    setLoadError(null)
-    await Promise.allSettled([fetchOrders(), fetchSales(), fetchInventory(), fetchProfiles()])
-  }
-
   return (
     <>
       <header className="mb-7 flex flex-wrap items-center justify-between gap-4">
@@ -156,10 +151,7 @@ function AdminOverview() {
           </p>
         </div>
 
-        <div className="flex gap-2">
-          <button type="button" onClick={refreshOverview} disabled={loading} className="rounded-lg border border-[#D8BD8F] bg-white px-4 py-2 text-sm font-bold text-[#756957] hover:text-[#241A12] disabled:opacity-50">{loading ? 'Refreshing…' : 'Refresh'}</button>
-          <button type="button" onClick={() => navigate('/admin/reports')} className="rounded-lg bg-[#2B211A] px-4 py-2 text-sm font-bold text-white hover:bg-[#44362B]">View sales report</button>
-        </div>
+        <button type="button" onClick={() => navigate('/admin/reports')} className="rounded-lg bg-[#2B211A] px-4 py-2 text-sm font-bold text-white hover:bg-[#44362B]">View sales report</button>
       </header>
 
       {error && (
