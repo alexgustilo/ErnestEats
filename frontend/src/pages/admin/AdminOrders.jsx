@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useOrders } from '../../features/orders/useOrders'
 import { useProducts } from '../../features/products/useProducts'
 import { getCustomerProfiles } from '../../features/profile/profileApi'
+import AdminPagination from '../../components/admin/AdminPagination'
 
 function formatPeso(value) {
   return `₱${(Number(value) || 0).toLocaleString('en-PH', { maximumFractionDigits: 2 })}`
@@ -32,24 +33,13 @@ function AdminOrders() {
   const [updatingOrderId, setUpdatingOrderId] = useState(null)
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [page, setPage] = useState(1)
   const [profiles, setProfiles] = useState([])
   const [profilesLoading, setProfilesLoading] = useState(true)
   const [profilesError, setProfilesError] = useState(null)
   const [actionNotice, setActionNotice] = useState('')
 
   const requestProfiles = useCallback(() => getCustomerProfiles(), [])
-
-  const fetchProfiles = useCallback(async function fetchProfiles() {
-    setProfilesLoading(true)
-    setProfilesError(null)
-    try {
-      setProfiles(await requestProfiles())
-    } catch (fetchError) {
-      setProfilesError(fetchError.message)
-    } finally {
-      setProfilesLoading(false)
-    }
-  }, [requestProfiles])
 
   useEffect(() => {
     fetchOrders().catch(() => {})
@@ -77,6 +67,13 @@ function AdminOrders() {
     const text = `${order.id} ${order.customer_id || ''} ${customerName} ${customerContact} ${itemNames} ${status}`.toLowerCase()
     return matchesStatus && text.includes(query.trim().toLowerCase())
   }), [orders, profilesById, query, statusFilter])
+  const pageSize = 10
+  const pageCount = Math.max(1, Math.ceil(visibleOrders.length / pageSize))
+  const pageOrders = visibleOrders.slice((page - 1) * pageSize, page * pageSize)
+
+  useEffect(() => {
+    if (page > pageCount) setPage(pageCount)
+  }, [page, pageCount])
 
   async function handleStatusUpdate(order, updates) {
     setUpdatingOrderId(order.id)
@@ -112,27 +109,27 @@ function AdminOrders() {
     <section>
       <header className="mb-7 flex flex-wrap items-end justify-between gap-4">
         <div><h1 className="text-2xl font-extrabold">Orders</h1><p className="mt-1 text-sm text-[#9A8061]">Manage incoming pickup orders</p></div>
-        <button type="button" onClick={() => { fetchOrders().catch(() => {}); fetchProducts().catch(() => {}); fetchProfiles() }} disabled={pageLoading} className="rounded-lg border border-[#D8BD8F] bg-white px-4 py-2 text-sm font-bold text-[#756957] hover:text-[#241A12] disabled:opacity-50">{pageLoading ? 'Refreshing…' : 'Refresh'}</button>
       </header>
 
       {pageError && <div role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{pageError}</div>}
       {actionNotice && <div role="status" className="mb-5 rounded-xl border border-[#D6E8DC] bg-[#F0F8F2] px-4 py-3 text-sm text-[#315D4D]">{actionNotice}</div>}
 
       <div className="mb-4 flex flex-wrap gap-3">
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search order, customer, or item" aria-label="Search orders" className="w-full max-w-sm rounded-xl border border-[#E6DCCF] bg-white px-4 py-2.5 text-sm outline-none focus:border-[#E8531D]" />
-        <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} aria-label="Filter orders by status" className="rounded-xl border border-[#E6DCCF] bg-white px-4 py-2.5 text-sm outline-none focus:border-[#E8531D]">
+        <input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1) }} placeholder="Search order, customer, or item" aria-label="Search orders" className="w-full max-w-sm rounded-xl border border-[#E6DCCF] bg-white px-4 py-2.5 text-sm outline-none focus:border-[#E8531D]" />
+        <select value={statusFilter} onChange={(event) => { setStatusFilter(event.target.value); setPage(1) }} aria-label="Filter orders by status" className="rounded-xl border border-[#E6DCCF] bg-white px-4 py-2.5 text-sm outline-none focus:border-[#E8531D]">
           <option value="all">All statuses</option>
           {['pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled'].map((status) => <option key={status} value={status}>{status.charAt(0).toUpperCase() + status.slice(1)}</option>)}
         </select>
-        <span className="self-center text-sm text-[#8A7A61]">{visibleOrders.length} {visibleOrders.length === 1 ? 'order' : 'orders'}</span>
       </div>
+
+      <AdminPagination total={visibleOrders.length} page={page} pageSize={pageSize} onPageChange={setPage} />
 
       <div className="overflow-hidden rounded-2xl border border-[#EAD8B9] bg-white">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px] border-collapse text-left text-sm">
             <thead className="bg-[#F2ECDD] text-[#927859]"><tr><th className="px-4 py-4 font-medium">Order ID</th><th className="px-4 py-4 font-medium">Customer</th><th className="px-4 py-4 font-medium">Items</th><th className="px-4 py-4 font-medium">Total</th><th className="px-4 py-4 font-medium">Payment</th><th className="px-4 py-4 font-medium">Status</th><th className="px-4 py-4 font-medium">Action</th></tr></thead>
             <tbody>
-              {visibleOrders.map((order) => {
+              {pageOrders.map((order) => {
                 const nextAction = getNextAction(order)
                 const orderItems = order.order_items || []
                 const itemsText = orderItems.map((item) => {
