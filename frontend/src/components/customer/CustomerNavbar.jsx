@@ -74,7 +74,7 @@ function CustomerNavbar({ cartCount = 0, cartTotal = 0, unreadCount = 0, profile
             {notificationsOpen && (
               <>
                 <button type="button" aria-label="Close notifications" className="fixed inset-0 z-40 cursor-default" onClick={() => setNotificationsOpen(false)} />
-                <section role="dialog" aria-labelledby="customer-notifications-title" className="absolute right-0 top-full z-50 mt-3 flex max-h-[min(620px,75vh)] w-[min(390px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-[#E8E3DA] bg-white text-left shadow-[0_16px_48px_rgba(35,29,21,.18)]">
+                <section role="dialog" aria-labelledby="customer-notifications-title" className="absolute right-0 top-full z-50 mt-3 flex max-h-[min(620px,75vh)] w-[min(390px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-[#E8E3DA] bg-white text-left shadow-[0_16px_48px_rgba(35,29,21,.18)] max-[639px]:fixed max-[639px]:left-2 max-[639px]:right-2 max-[639px]:top-24 max-[639px]:mt-0 max-[639px]:max-h-[calc(100dvh-7rem)] max-[639px]:w-auto">
                   <header className="flex items-center justify-between border-b border-[#EEEAE2] px-5 py-4">
                     <div><h2 id="customer-notifications-title" className="text-xl font-bold text-[#29241E]">Notifications</h2><p className="mt-1 text-xs text-[#81796D]">{unreadCount ? `${unreadCount} new update${unreadCount === 1 ? '' : 's'}` : 'You’re all caught up'}</p></div>
                     <button type="button" onClick={() => setNotificationsOpen(false)} aria-label="Close notifications" className="rounded-full p-2 text-lg leading-none text-[#746B60] hover:bg-[#F7F5F0]">×</button>
@@ -91,7 +91,7 @@ function CustomerNavbar({ cartCount = 0, cartTotal = 0, unreadCount = 0, profile
           <Link to="/customer/cart" aria-label={`Cart, ${cartCount} items, ₱${Number(cartTotal).toLocaleString('en-PH', { maximumFractionDigits: 2 })}`} className="max-w-[108px] truncate rounded-full bg-[#E8531D] px-3 py-2 text-[11px] font-semibold text-white hover:bg-[#C9481B] sm:max-w-none sm:px-4 sm:text-xs">
             Cart · ₱{Number(cartTotal).toLocaleString('en-PH', { maximumFractionDigits: 2 })}{cartCount > 0 ? ` (${cartCount})` : ''}
           </Link>
-          <Link to="/customer/profile" aria-label="Your profile" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F3A93B] font-bold text-[#292722]">
+          <Link to="/customer/profile" aria-label="Your profile" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E8D5B7] font-bold text-[#292722]">
             {(profile?.full_name || profile?.email || 'A').charAt(0).toUpperCase()}
           </Link>
           <button type="button" onClick={onLogout} aria-label="Log out" className="flex h-9 w-8 shrink-0 items-center justify-center rounded-lg text-[#746B60] hover:bg-[#FAF7F1] hover:text-[#A54A26] sm:h-auto sm:w-auto sm:px-1">
