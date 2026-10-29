@@ -7,7 +7,6 @@ import Cart from './Cart'
 import Checkout from './Checkout'
 import ProductDetails from './ProductDetails'
 import CustomerProfile from './CustomerProfile'
-import CustomerNotifications from './CustomerNotifications'
 import CustomerAbout from './CustomerAbout'
 
 function CustomerRoutes() {
@@ -20,7 +19,6 @@ function CustomerRoutes() {
         <Route path="cart" element={<Cart />} />
         <Route path="checkout" element={<Checkout />} />
         <Route path="orders" element={<MyOrders />} />
-        <Route path="notifications" element={<CustomerNotifications />} />
         <Route path="profile" element={<CustomerProfile />} />
         <Route path="about" element={<CustomerAbout />} />
         <Route path="*" element={<Navigate to="/customer" replace />} />
