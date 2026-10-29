@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useCategories } from '../../features/categories/useCategories'
 import { useProducts } from '../../features/products/useProducts'
+import AdminPagination from '../../components/admin/AdminPagination'
 
 function AdminCategories() {
   const {
@@ -24,6 +25,7 @@ function AdminCategories() {
   const [editingId, setEditingId] = useState(null)
   const [name, setName] = useState('')
   const [query, setQuery] = useState('')
+  const [page, setPage] = useState(1)
 
   useEffect(() => {
     fetchCategories().catch(() => {})
@@ -90,6 +92,13 @@ function AdminCategories() {
   const visibleCategories = useMemo(() => categories.filter((category) =>
     category.name.toLowerCase().includes(query.trim().toLowerCase())
   ), [categories, query])
+  const pageSize = 10
+  const pageCount = Math.max(1, Math.ceil(visibleCategories.length / pageSize))
+  const pageCategories = visibleCategories.slice((page - 1) * pageSize, page * pageSize)
+
+  useEffect(() => {
+    if (page > pageCount) setPage(pageCount)
+  }, [page, pageCount])
 
   return (
     <section>
@@ -102,7 +111,6 @@ function AdminCategories() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => { fetchCategories().catch(() => {}); fetchProducts().catch(() => {}) }} disabled={loading} className="rounded-lg border border-[#D8BD8F] bg-white px-4 py-2 text-sm font-bold text-[#756957] hover:text-[#241A12] disabled:opacity-50">{loading ? 'Refreshing…' : 'Refresh'}</button>
           <button type="button" onClick={openAddForm} className="rounded-lg bg-[#2B211A] px-4 py-2 text-sm font-bold text-white hover:bg-[#44362B]">+ Add category</button>
         </div>
       </header>
@@ -114,9 +122,10 @@ function AdminCategories() {
       )}
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search categories" aria-label="Search categories" className="w-full max-w-sm rounded-xl border border-[#E6DCCF] bg-white px-4 py-2.5 text-sm outline-none focus:border-[#E8531D]" />
-        <span className="text-sm text-[#8A7A61]">{visibleCategories.length} {visibleCategories.length === 1 ? 'category' : 'categories'}</span>
+        <input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1) }} placeholder="Search categories" aria-label="Search categories" className="w-full max-w-sm rounded-xl border border-[#E6DCCF] bg-white px-4 py-2.5 text-sm outline-none focus:border-[#E8531D]" />
       </div>
+
+      <AdminPagination total={visibleCategories.length} page={page} pageSize={pageSize} onPageChange={setPage} />
 
       <section className="overflow-hidden rounded-2xl border border-[#EAD8B9] bg-white">
         <div className="overflow-x-auto">
@@ -130,7 +139,7 @@ function AdminCategories() {
             </thead>
 
             <tbody>
-              {visibleCategories.map((category) => {
+              {pageCategories.map((category) => {
                 const productCount = products.filter(
                   (product) => String(product.category_id) === String(category.id)
                 ).length
