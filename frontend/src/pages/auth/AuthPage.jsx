@@ -104,19 +104,15 @@ function AuthPage() {
         {/* LEFT PANEL */}
         <section className="hidden lg:flex relative flex-1 overflow-hidden bg-[#25211C]">
 
-          <div className="absolute inset-0 pointer-events-none">
+          <img
+            src="https://images.unsplash.com/photo-1565016050896-d5f362810b48?auto=format&fit=crop&w=1400&q=85"
+            alt="Freshly prepared burger from Ernest Kitchen"
+            className="absolute inset-y-0 right-0 h-full w-[58%] object-cover object-center"
+            onError={(event) => { event.currentTarget.style.display = 'none' }}
+          />
+          <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-r from-[#25211C] via-[#25211C]/90 to-[#25211C]/20" />
 
-            <div className="absolute top-[15%] right-[10%] w-[420px] h-[420px] rounded-full bg-[#E8531D]/10 blur-[100px]" />
-
-            <div className="absolute bottom-[-120px] left-[15%] w-[350px] h-[350px] rounded-full bg-[#F3A93B]/10 blur-[100px]" />
-
-          </div>
-
-          <div className="absolute top-10 right-10 w-32 h-32 border border-white/5 rounded-full" />
-
-          <div className="absolute bottom-12 right-24 w-20 h-20 border border-white/5 rounded-full" />
-
-          <div className="relative z-10 w-full max-w-[650px] mx-auto px-10 xl:px-20 flex flex-col justify-center">
+          <div className="relative z-10 w-full max-w-[700px] mx-auto px-10 xl:px-16 flex flex-col justify-center">
 
             <div className="inline-flex self-start items-center gap-2 bg-[#F3A93B] text-[#241A12] text-[11px] font-extrabold px-4 py-2 rounded-full mb-7 shadow-lg">
 
@@ -136,20 +132,10 @@ function AuthPage() {
               Fresh food from Ernest Kitchen & Streetfood is just a few clicks away.
             </p>
 
-            <div className="flex items-end gap-4 mt-10 mb-10">
-
-              <div className="w-[68px] h-[68px] rounded-2xl bg-[#F3A93B] flex items-center justify-center text-3xl shadow-xl transition-transform hover:-translate-y-1">
-                🥡
-              </div>
-
-              <div className="w-[82px] h-[82px] rounded-2xl bg-[#E8531D] flex items-center justify-center text-4xl shadow-2xl -translate-y-3 transition-transform hover:-translate-y-5">
-                🍔
-              </div>
-
-              <div className="w-[68px] h-[68px] rounded-2xl bg-[#F6EEDF] flex items-center justify-center text-3xl shadow-xl transition-transform hover:-translate-y-1">
-                🍜
-              </div>
-
+            <div className="mt-8 mb-8 flex flex-wrap gap-2.5">
+              {['Street food', 'Burgers', 'Rice meals'].map((category) => (
+                <span key={category} className="rounded-full border border-white/15 bg-white/5 px-3.5 py-2 text-xs font-semibold text-[#E8DFD2] backdrop-blur-sm">{category}</span>
+              ))}
             </div>
 
             <div className="space-y-4">
@@ -193,17 +179,6 @@ function AuthPage() {
                 </div>
 
               ))}
-
-            </div>
-
-            <div className="border-t border-white/10 mt-10 pt-5">
-
-              <p className="text-xs text-[#817769] italic">
-                “Ordering here is so fast!”{' '}
-                <span className="not-italic text-[#C8BFAF]">
-                  — A happy customer
-                </span>
-              </p>
 
             </div>
 
