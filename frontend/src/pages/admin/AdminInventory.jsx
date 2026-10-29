@@ -10,11 +10,18 @@ const emptyForm = {
   low_stock_threshold: '5'
 }
 
-function getStockStatus(stock, threshold) {
+function getStockStatus(stock, threshold, isAvailable = true) {
   if (Number(stock) <= 0) {
     return {
       label: 'Out of stock',
       style: 'bg-red-100 text-red-700'
+    }
+  }
+
+  if (!isAvailable) {
+    return {
+      label: 'Unavailable',
+      style: 'bg-[#EEE9D9] text-[#8D7655]'
     }
   }
 
@@ -224,7 +231,8 @@ function AdminInventory() {
               {pageInventory.map((item) => {
                 const stock = Number(item.stock_quantity) || 0
                 const threshold = Number(item.low_stock_threshold) || 0
-                const status = getStockStatus(stock, threshold)
+                const product = products.find((entry) => String(entry.id) === String(item.product_id))
+                const status = getStockStatus(stock, threshold, product?.is_available !== false)
                 const barWidth = Math.min((stock / maxStock) * 100, 100)
 
                 return (
