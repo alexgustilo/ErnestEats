@@ -47,6 +47,7 @@ function CustomerHome() {
   const { products, fetchProducts, loading, error } = useProducts()
   const [activeSlide, setActiveSlide] = useState(0)
   const [isCarouselPaused, setIsCarouselPaused] = useState(false)
+  const [cartNotice, setCartNotice] = useState('')
 
   useEffect(() => { fetchProducts().catch(() => {}) }, [fetchProducts])
 
@@ -141,6 +142,7 @@ function CustomerHome() {
           <div><p className="text-xs font-semibold uppercase tracking-[.16em] text-[#A54A26]">Made fresh daily</p><h2 className="mt-2 text-3xl font-bold tracking-tight text-[#29241E]">On the menu</h2><p className="mt-2 text-sm text-[#817565]">A few favorites to get you started.</p></div>
           <button type="button" onClick={() => navigate('/customer/menu')} className="text-sm font-extrabold text-[#B23F14] hover:underline">View full menu <span aria-hidden="true">→</span></button>
         </div>
+        {cartNotice && <p role="status" className="mb-4 rounded-xl border border-[#EAD9BC] bg-white p-3 text-sm text-[#8A4A24]">{cartNotice}</p>}
         {error && <p className="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</p>}
         {loading ? <p className="py-12 text-center text-[#817565]">Loading menu…</p> : featuredProducts.length === 0 ? <p className="rounded-2xl border border-[#EAD9BC] bg-white p-8 text-center text-[#817565]">No products are available right now.</p> : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -149,7 +151,7 @@ function CustomerHome() {
                 <button type="button" onClick={() => navigate(`/customer/products/${product.id}`)} className="relative block aspect-[4/3] w-full overflow-hidden bg-[#E7D7BE] text-left">
                   {product.image_url ? <img src={product.image_url} alt={product.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" /> : <div className="flex h-full items-end bg-[radial-gradient(ellipse_at_70%_30%,rgba(232,83,29,.12),transparent_45%),linear-gradient(145deg,#EAE2D6,#D5C8B5)] p-4"><span className="text-xs font-bold uppercase tracking-[.2em] text-[#604D39]">Ernest Kitchen</span></div>}
                 </button>
-                <div className="p-4"><button type="button" onClick={() => navigate(`/customer/products/${product.id}`)} className="text-left font-extrabold hover:text-[#B23F14]">{product.name}</button><div className="mt-4 flex items-center justify-between"><span className="font-bold text-[#A54A26]">{formatPeso(product.price)}</span><button type="button" onClick={() => addItem(product)} className="rounded-lg border border-[#D9CCBA] px-4 py-2 text-xs font-semibold text-[#332B22] transition hover:border-[#A54A26] hover:text-[#A54A26]">Add to cart</button></div></div>
+                <div className="p-4"><button type="button" onClick={() => navigate(`/customer/products/${product.id}`)} className="text-left font-extrabold hover:text-[#B23F14]">{product.name}</button><div className="mt-2 text-xs font-semibold text-[#58734A]">{Number(product.stock_quantity) > 0 ? `${product.stock_quantity} available` : 'Out of stock'}</div><div className="mt-4 flex items-center justify-between"><span className="font-bold text-[#A54A26]">{formatPeso(product.price)}</span><button type="button" onClick={() => { const result = addItem(product); setCartNotice(result?.ok ? `${product.name} added to cart.` : result?.message || 'Could not add this item.') }} disabled={Number(product.stock_quantity) <= 0} className="rounded-lg border border-[#D9CCBA] px-4 py-2 text-xs font-semibold text-[#332B22] transition hover:border-[#A54A26] hover:text-[#A54A26] disabled:cursor-not-allowed disabled:opacity-40">{Number(product.stock_quantity) > 0 ? 'Add to cart' : 'Out of stock'}</button></div></div>
               </article>
             ))}
           </div>
