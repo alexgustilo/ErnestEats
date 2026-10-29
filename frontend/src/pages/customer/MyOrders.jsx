@@ -187,7 +187,7 @@ function MyOrders() {
                               {isDone ? '✓' : index + 1}
                             </span>
 
-                            <span className="mt-2 text-xs text-[#756957]">
+                            <span className="mt-2 text-[10px] leading-4 text-[#756957] sm:text-xs">
                               {step.label}
                             </span>
                           </div>
