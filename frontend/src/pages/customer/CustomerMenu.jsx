@@ -29,6 +29,7 @@ function CustomerMenu() {
 
   const [activeCategory, setActiveCategory] = useState('all')
   const [search, setSearch] = useState('')
+  const [cartNotice, setCartNotice] = useState('')
 
   useEffect(() => {
     fetchProducts().catch(() => {})
@@ -118,6 +119,8 @@ function CustomerMenu() {
 
       <section className="min-w-0 flex-1">
 
+        {cartNotice && <p role="status" className="mb-4 rounded-xl border border-[#EAD9BC] bg-white p-3 text-sm text-[#8A4A24]">{cartNotice}</p>}
+
         {error && (
           <p className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             {error}
@@ -163,12 +166,19 @@ function CustomerMenu() {
 
                     <button
                       type="button"
-                      onClick={() => addItem(product)}
-                      className="rounded-lg bg-[#E8531D] px-4 py-2 text-sm font-semibold text-white hover:bg-[#C9481B]"
+                      onClick={() => {
+                        const result = addItem(product)
+                        setCartNotice(result?.ok ? `${product.name} added to cart.` : result?.message || 'Could not add this item.')
+                      }}
+                      disabled={Number(product.stock_quantity) <= 0}
+                      className="rounded-lg bg-[#E8531D] px-4 py-2 text-sm font-semibold text-white hover:bg-[#C9481B] disabled:cursor-not-allowed disabled:bg-gray-300"
                     >
-                      Add to cart
+                      {Number(product.stock_quantity) > 0 ? 'Add to cart' : 'Out of stock'}
                     </button>
                   </div>
+                  <p className={`mt-2 text-xs font-semibold ${Number(product.stock_quantity) > 0 ? 'text-[#58734A]' : 'text-red-600'}`}>
+                    {Number(product.stock_quantity) > 0 ? `${product.stock_quantity} available` : 'Currently out of stock'}
+                  </p>
                 </div>
               </article>
             ))}
