@@ -25,19 +25,50 @@ async function getProducts() {
 }
 
 async function createProduct(product, imageFile) {
+  const { stock_quantity: stockQuantity = 0, ...productFields } = product
   const uploadedImage = await uploadProductImage(imageFile)
-  const { data, error } = await supabase
+  const { data: createdProduct, error: productError } = await supabase
     .from('products')
-    .insert({ ...product, image_url: uploadedImage?.url || null })
+    .insert({ ...productFields, image_url: uploadedImage?.url || null })
     .select()
     .single()
 
-  if (error) {
+  if (productError) {
     if (uploadedImage) await removeProductImage(uploadedImage.url)
-    throw error
+    throw productError
   }
 
-  return data
+  const { data: inventory, error: inventoryError } = await supabase
+    .from('inventory')
+    .insert({
+      product_id: createdProduct.id,
+      stock_quantity: stockQuantity,
+      low_stock_threshold: 5
+    })
+    .select('stock_quantity')
+    .single()
+
+  if (inventoryError) {
+    const { error: rollbackError } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', createdProduct.id)
+
+    if (uploadedImage) {
+      try {
+        await removeProductImage(uploadedImage.url)
+      } catch {
+        // Preserve the inventory error; image cleanup can be retried separately.
+      }
+    }
+
+    if (rollbackError) {
+      inventoryError.message = `Could not save starting stock, and the new product could not be rolled back: ${inventoryError.message}`
+    }
+    throw inventoryError
+  }
+
+  return { ...createdProduct, stock_quantity: inventory.stock_quantity }
 }
 
 async function updateProduct(id, product, imageFile) {
