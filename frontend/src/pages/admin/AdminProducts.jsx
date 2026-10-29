@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useProducts } from '../../features/products/useProducts'
 import { useCategories } from '../../features/categories/useCategories'
+import AdminPagination from '../../components/admin/AdminPagination'
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
@@ -35,6 +36,7 @@ function AdminProducts() {
   const {
     categories,
     fetchCategories,
+    addCategory,
     loading: categoriesLoading,
     error: categoriesError
   } = useCategories()
@@ -44,10 +46,15 @@ function AdminProducts() {
   const [form, setForm] = useState(emptyForm)
   const [query, setQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
+  const [page, setPage] = useState(1)
   const [imageFile, setImageFile] = useState(null)
   const [previewUrl, setPreviewUrl] = useState('')
   const [formError, setFormError] = useState('')
   const [isSaving, setIsSaving] = useState(false)
+  const [showCategoryCreator, setShowCategoryCreator] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState('')
+  const [categoryCreateError, setCategoryCreateError] = useState('')
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false)
 
   useEffect(() => () => {
     if (previewUrl) URL.revokeObjectURL(previewUrl)
@@ -64,6 +71,9 @@ function AdminProducts() {
     setImageFile(null)
     setPreviewUrl('')
     setFormError('')
+    setShowCategoryCreator(false)
+    setNewCategoryName('')
+    setCategoryCreateError('')
     setIsFormOpen(true)
   }
 
@@ -80,6 +90,9 @@ function AdminProducts() {
     setImageFile(null)
     setPreviewUrl('')
     setFormError('')
+    setShowCategoryCreator(false)
+    setNewCategoryName('')
+    setCategoryCreateError('')
     setIsFormOpen(true)
   }
 
@@ -90,6 +103,41 @@ function AdminProducts() {
     setImageFile(null)
     setPreviewUrl('')
     setFormError('')
+    setShowCategoryCreator(false)
+    setNewCategoryName('')
+    setCategoryCreateError('')
+  }
+
+  async function handleCreateCategory() {
+    const name = newCategoryName.trim()
+    if (!name) {
+      setCategoryCreateError('Enter a category name.')
+      return
+    }
+
+    const existingCategory = categories.find(
+      (category) => category.name.trim().toLowerCase() === name.toLowerCase()
+    )
+    if (existingCategory) {
+      setForm((previousForm) => ({ ...previousForm, category_id: String(existingCategory.id) }))
+      setShowCategoryCreator(false)
+      setNewCategoryName('')
+      setCategoryCreateError('')
+      return
+    }
+
+    setIsCreatingCategory(true)
+    setCategoryCreateError('')
+    try {
+      const category = await addCategory({ name })
+      setForm((previousForm) => ({ ...previousForm, category_id: String(category.id) }))
+      setShowCategoryCreator(false)
+      setNewCategoryName('')
+    } catch (err) {
+      setCategoryCreateError(err.message || 'Could not create the category.')
+    } finally {
+      setIsCreatingCategory(false)
+    }
   }
 
   function handleChange(event) {
@@ -185,6 +233,13 @@ function AdminProducts() {
     const matchesText = `${product.name || ''} ${product.description || ''}`.toLowerCase().includes(query.trim().toLowerCase())
     return matchesCategory && matchesText
   }), [products, categoryFilter, query])
+  const pageSize = 10
+  const pageCount = Math.max(1, Math.ceil(visibleProducts.length / pageSize))
+  const pageProducts = visibleProducts.slice((page - 1) * pageSize, page * pageSize)
+
+  useEffect(() => {
+    if (page > pageCount) setPage(pageCount)
+  }, [page, pageCount])
 
   return (
     <section>
@@ -197,7 +252,6 @@ function AdminProducts() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => { fetchProducts().catch(() => {}); fetchCategories().catch(() => {}) }} disabled={loading} className="rounded-lg border border-[#D8BD8F] bg-white px-4 py-2 text-sm font-bold text-[#756957] hover:text-[#241A12] disabled:opacity-50">{loading ? 'Refreshing…' : 'Refresh'}</button>
           <button type="button" onClick={openAddForm} className="rounded-lg bg-[#2B211A] px-4 py-2 text-sm font-bold text-white hover:bg-[#44362B]">+ Add product</button>
         </div>
       </header>
@@ -208,11 +262,18 @@ function AdminProducts() {
         </div>
       )}
 
-      <div className="mb-4 flex flex-wrap gap-3">
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search products" aria-label="Search products" className="w-full max-w-sm rounded-xl border border-[#E6DCCF] bg-white px-4 py-2.5 text-sm outline-none focus:border-[#E8531D]" />
-        <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} aria-label="Filter products by category" className="rounded-xl border border-[#E6DCCF] bg-white px-4 py-2.5 text-sm outline-none focus:border-[#E8531D]"><option value="all">All categories</option>{categories.map((category) => <option key={category.id} value={String(category.id)}>{category.name}</option>)}</select>
-        <span className="self-center text-sm text-[#8A7A61]">{visibleProducts.length} {visibleProducts.length === 1 ? 'product' : 'products'}</span>
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1) }} placeholder="Search products" aria-label="Search products" className="w-full max-w-sm rounded-xl border border-[#E6DCCF] bg-white px-4 py-2.5 text-sm outline-none focus:border-[#E8531D]" />
+        <div className="flex max-w-full items-center gap-2 overflow-x-auto py-1" aria-label="Filter products by category">
+          <button type="button" onClick={() => { setCategoryFilter('all'); setPage(1) }} aria-pressed={categoryFilter === 'all'} className={`shrink-0 rounded-full border px-3.5 py-2 text-xs font-semibold ${categoryFilter === 'all' ? 'border-[#2B211A] bg-[#2B211A] text-white' : 'border-[#E6DCCF] bg-white text-[#756957] hover:border-[#B94E2B]'}`}>All products</button>
+          {categories.map((category) => {
+            const selected = categoryFilter === String(category.id)
+            return <button key={category.id} type="button" onClick={() => { setCategoryFilter(String(category.id)); setPage(1) }} aria-pressed={selected} className={`shrink-0 rounded-full border px-3.5 py-2 text-xs font-semibold ${selected ? 'border-[#2B211A] bg-[#2B211A] text-white' : 'border-[#E6DCCF] bg-white text-[#756957] hover:border-[#B94E2B]'}`}>{category.name}</button>
+          })}
+        </div>
       </div>
+
+      <AdminPagination total={visibleProducts.length} page={page} pageSize={pageSize} onPageChange={setPage} />
 
       <section className="overflow-hidden rounded-2xl border border-[#EAD8B9] bg-white">
         <div className="overflow-x-auto">
@@ -228,7 +289,7 @@ function AdminProducts() {
             </thead>
 
             <tbody>
-              {visibleProducts.map((product) => (
+              {pageProducts.map((product) => (
                 <tr key={product.id} className="border-t border-[#EAD8B9]">
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-3">
@@ -378,7 +439,14 @@ function AdminProducts() {
                 <select
                   name="category_id"
                   value={form.category_id}
-                  onChange={handleChange}
+                  onChange={(event) => {
+                    if (event.target.value === '__create_category__') {
+                      setShowCategoryCreator(true)
+                      setCategoryCreateError('')
+                      return
+                    }
+                    handleChange(event)
+                  }}
                   className="mt-1 w-full rounded-xl border border-[#E6DCCF] bg-white px-4 py-3 outline-none focus:border-[#E8531D]"
                 >
                   <option value="">Choose a category</option>
@@ -387,8 +455,21 @@ function AdminProducts() {
                       {category.name}
                     </option>
                   ))}
+                  <option value="__create_category__">+ Create a category…</option>
                 </select>
               </label>
+
+              {showCategoryCreator && (
+                <div className="rounded-xl border border-[#E6DCCF] bg-[#FAF9F6] p-4">
+                  <label htmlFor="new-product-category" className="block text-sm font-semibold">New category name</label>
+                  <div className="mt-2 flex gap-2">
+                    <input id="new-product-category" value={newCategoryName} onChange={(event) => { setNewCategoryName(event.target.value); setCategoryCreateError('') }} autoFocus placeholder="For example, Rice Meals" className="min-w-0 flex-1 rounded-lg border border-[#E6DCCF] bg-white px-3 py-2 text-sm outline-none focus:border-[#E8531D]" />
+                    <button type="button" onClick={handleCreateCategory} disabled={isCreatingCategory} className="shrink-0 rounded-lg bg-[#2B211A] px-3 py-2 text-sm font-semibold text-white hover:bg-[#44362B] disabled:opacity-60">{isCreatingCategory ? 'Adding…' : 'Add'}</button>
+                    <button type="button" onClick={() => { setShowCategoryCreator(false); setCategoryCreateError('') }} className="rounded-lg border border-[#D9C9AF] px-3 py-2 text-sm font-semibold">Cancel</button>
+                  </div>
+                  {categoryCreateError && <p role="alert" className="mt-2 text-sm text-red-700">{categoryCreateError}</p>}
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-semibold" htmlFor="product-image">Product image</label>
