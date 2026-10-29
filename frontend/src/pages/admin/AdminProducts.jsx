@@ -51,6 +51,7 @@ function AdminProducts() {
   const [imageFile, setImageFile] = useState(null)
   const [previewUrl, setPreviewUrl] = useState('')
   const [formError, setFormError] = useState('')
+  const [notice, setNotice] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [showCategoryCreator, setShowCategoryCreator] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState('')
@@ -67,6 +68,7 @@ function AdminProducts() {
   }, [fetchCategories, fetchProducts])
 
   function openAddForm() {
+    setNotice('')
     setEditingId(null)
     setForm(emptyForm)
     setImageFile(null)
@@ -84,6 +86,7 @@ function AdminProducts() {
       name: product.name || '',
       description: product.description || '',
       price: product.price ?? '',
+      stock_quantity: String(product.stock_quantity ?? 0),
       image_url: product.image_url || '',
       is_available: Boolean(product.is_available),
       category_id: product.category_id || ''
@@ -191,16 +194,14 @@ function AdminProducts() {
         description: form.description.trim(),
         price: Number(form.price),
         is_available: form.is_available,
-        category_id: form.category_id || null
+        category_id: form.category_id || null,
+        stock_quantity: Number(form.stock_quantity)
       }
 
       if (editingId) {
         await editProduct(editingId, productData, imageFile)
       } else {
-        await addProduct({
-          ...productData,
-          stock_quantity: Number(form.stock_quantity)
-        }, imageFile)
+        await addProduct(productData, imageFile)
       }
 
       closeForm()
@@ -213,15 +214,19 @@ function AdminProducts() {
 
   async function handleDelete(product) {
     const confirmed = window.confirm(
-      `Delete "${product.name}"?`
+      `Delete "${product.name}"? If it appears in an order, it will be marked unavailable and its stock will be set to 0 so the order history stays intact.`
     )
 
     if (!confirmed) return
 
+    setNotice('')
     try {
-      await removeProduct(product.id)
+      const result = await removeProduct(product.id)
+      setNotice(result.archived
+        ? `${product.name} has order history, so it was marked unavailable and its stock was set to 0. The old order records are preserved.`
+        : `${product.name} was deleted.`)
     } catch {
-      // useProducts exposes the error through productsError.
+      // useProducts exposes unexpected errors through productsError.
     }
   }
 
@@ -263,6 +268,12 @@ function AdminProducts() {
       {error && (
         <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
+        </div>
+      )}
+
+      {notice && (
+        <div role="status" className="mb-5 rounded-xl bg-[#E0EEE5] px-4 py-3 text-sm text-[#315D4D]">
+          {notice}
         </div>
       )}
 
@@ -438,24 +449,24 @@ function AdminProducts() {
                 />
               </label>
 
-              {!editingId && (
-                <label className="block text-sm font-semibold">
-                  Stock quantity
-                  <input
-                    name="stock_quantity"
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={form.stock_quantity}
-                    onChange={handleChange}
-                    required
-                    className="mt-1 w-full rounded-xl border border-[#E6DCCF] px-4 py-3 outline-none focus:border-[#E8531D]"
-                  />
-                  <span className="mt-1 block text-xs font-normal text-[#8A7A61]">
-                    This quantity is added to Inventory when the product is created. You can update it there later.
-                  </span>
-                </label>
-              )}
+              <label className="block text-sm font-semibold">
+                Stock quantity
+                <input
+                  name="stock_quantity"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={form.stock_quantity}
+                  onChange={handleChange}
+                  required
+                  className="mt-1 w-full rounded-xl border border-[#E6DCCF] px-4 py-3 outline-none focus:border-[#E8531D]"
+                />
+                <span className="mt-1 block text-xs font-normal text-[#8A7A61]">
+                  {editingId
+                    ? 'Saving this form also updates the product quantity in Inventory.'
+                    : 'This starting quantity will appear in Inventory after the product is created.'}
+                </span>
+              </label>
 
               <label className="block text-sm font-semibold">
                 Category
