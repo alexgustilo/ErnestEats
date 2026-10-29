@@ -2,12 +2,26 @@ const supabase = require('../../config/supabase')
 const { uploadProductImage, removeProductImage } = require('./productImages.service')
 
 async function getProducts() {
-  const { data, error } = await supabase
+  const { data: products, error } = await supabase
     .from('products')
     .select('*')
 
   if (error) throw error
-  return data
+
+  const { data: inventory, error: inventoryError } = await supabase
+    .from('inventory')
+    .select('product_id, stock_quantity')
+
+  if (inventoryError) throw inventoryError
+
+  const stockByProductId = new Map(
+    inventory.map((item) => [String(item.product_id), Number(item.stock_quantity) || 0])
+  )
+
+  return products.map((product) => ({
+    ...product,
+    stock_quantity: stockByProductId.get(String(product.id)) ?? 0
+  }))
 }
 
 async function createProduct(product, imageFile) {
