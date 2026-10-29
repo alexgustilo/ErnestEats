@@ -23,6 +23,9 @@ function createProductFormData(product, imageFile) {
   formData.append('price', String(product.price))
   formData.append('is_available', String(Boolean(product.is_available)))
   formData.append('category_id', product.category_id || '')
+  if (product.stock_quantity !== undefined) {
+    formData.append('stock_quantity', String(product.stock_quantity))
+  }
   if (imageFile) formData.append('image', imageFile)
   return formData
 }
