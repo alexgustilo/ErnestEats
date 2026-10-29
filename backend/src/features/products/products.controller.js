@@ -46,6 +46,21 @@ function parseProductInput(body, { isCreate = false } = {}) {
   }
 
   const product = { name, description, price, is_available }
+  if (isCreate) {
+    const rawStock = body.stock_quantity
+    const stockQuantity = rawStock === undefined || String(rawStock).trim() === ''
+      ? 0
+      : Number(rawStock)
+
+    if (!Number.isInteger(stockQuantity) || stockQuantity < 0) {
+      const error = new Error('Starting stock must be a whole number of zero or more.')
+      error.statusCode = 400
+      throw error
+    }
+
+    product.stock_quantity = stockQuantity
+  }
+
   if (body.category_id !== undefined) {
     product.category_id = body.category_id === '' ? null : body.category_id
   } else if (isCreate) {
