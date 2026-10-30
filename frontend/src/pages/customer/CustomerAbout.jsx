@@ -11,7 +11,7 @@ function CustomerAbout() {
           <article className="rounded-2xl border border-[#E8D8BE] bg-[#FBF8F2] p-5"><h2 className="font-bold text-[#29241E]">How ordering works</h2><p className="mt-2 text-sm leading-6 text-[#746B60]">Browse the menu, add your favorites to your cart, then place a pickup order. We prepare it after confirmation; pay in cash at the counter when you collect it.</p></article>
           <article className="rounded-2xl border border-[#E8D8BE] bg-[#FBF8F2] p-5"><h2 className="font-bold text-[#29241E]">Pickup location</h2><p className="mt-2 text-sm leading-6 text-[#746B60]">Ernest Kitchen &amp; Streetfood, Main branch. Pickup only; delivery is not currently available.</p></article>
           <article className="rounded-2xl border border-[#E8D8BE] bg-[#FBF8F2] p-5"><h2 className="font-bold text-[#29241E]">Store hours</h2><p className="mt-2 text-sm leading-6 text-[#746B60]">10:00 AM–9:00 PM daily</p></article>
-          <article className="rounded-2xl border border-[#E8D8BE] bg-[#FBF8F2] p-5 sm:col-span-2"><h2 className="font-bold text-[#29241E]">Get in touch</h2><p className="mt-2 text-sm leading-6 text-[#746B60]">0917 000 0000 <span className="mx-2">·</span> hello@ernesteats.app</p></article>
+          <article className="rounded-2xl border border-[#E8D8BE] bg-[#FBF8F2] p-5 sm:col-span-2"><h2 className="font-bold text-[#29241E]">Get in touch</h2><p className="mt-2 text-sm leading-6 text-[#746B60]">09124152485<span className="mx-2">·</span> ernestEats@gmail.com</p></article>
         </div>
       </section>
     </main>
